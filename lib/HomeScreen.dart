@@ -6,6 +6,9 @@ import 'package:flutter_pytorch/flutter_pytorch.dart';
 import 'package:flutter_pytorch/pigeon.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:camera/camera.dart';
+import 'dart:async';
+// import 'LoaderState.dart';
+import 'package:flutter_tts/flutter_tts.dart';
 
 
 class HomeScreen extends StatefulWidget {
@@ -25,23 +28,46 @@ class _HomeScreenState extends State<HomeScreen> {
   final ImagePicker _picker = ImagePicker();
   bool objectDetection = false;
   List<ResultObjectDetection?> objDetect = [];
+  //ksh revised 10-26. I don't know why use
+  //bool firststate = false;
+  //bool message = true;
+  //ksh revised 10-26. TTS
+  final FlutterTts tts = FlutterTts();
 
   //ddr revised 10-25. what should mode do?
   int mode = 1;
-  void rightSlide(){
+  void leftSlide(){
     if(mode<3) {
       mode +=1;
     } else {
       mode = 1;
     }
+
+    //ksh revised 10-26. TTS
+    String mode_kr = '';
+    if(mode == 1) mode_kr = "일";
+    if(mode == 2) mode_kr = "이";
+    if(mode == 3) mode_kr = "삼으";
+    String tts_message = '모드 ' + mode_kr + '로 변경되었습니다.';
+    tts.speak(tts_message);
+
     sleep(Duration(milliseconds:500));
   }
-  void leftSlide(){
+  void rightSlide(){
     if(mode>1){
       mode-=1;
     } else {
       mode = 3;
     }
+
+    //ksh revised 10-26. TTS
+    String mode_kr = '';
+    if(mode == 1) mode_kr = "일";
+    if(mode == 2) mode_kr = "이";
+    if(mode == 3) mode_kr = "삼으";
+    String tts_message = '모드 ' + mode_kr + '로 변경되었습니다.';
+    tts.speak(tts_message);
+
     sleep(Duration(milliseconds:500));
   }
 
@@ -51,6 +77,10 @@ class _HomeScreenState extends State<HomeScreen> {
     super.initState();
     loadModel();
     loadCamera();
+
+    //ksh revised 10-26. TTS
+    tts.setSpeechRate(0.3);
+    tts.setLanguage("ko-KR");
   }
 
   Future loadModel() async {
@@ -69,6 +99,18 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  //ksh revised 10-26. Maybe Use Camera
+  /*
+  void handleTimeout() {
+    setState(() {
+      firststate = true;
+    });
+  }
+  Timer scheduleTimeout([int milliseconds = 10000]) =>
+      Timer(Duration(milliseconds: milliseconds), handleTimeout);
+  */
+
+  //ddr revised 10-25. Camera
   List<CameraDescription> ? cameras;
   CameraController? controller;
   loadCamera() async{
@@ -87,6 +129,20 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future runObjectDetection() async {
+    //ksh revised 10-26. I don't know why need.
+    /*setState(() {
+      firststate = false;
+      message = false;
+    });*/
+
+    //ksh revised 10-26. set Object Detection Output List
+    // Load the file using rootBundle
+    final String labelsData = await rootBundle.loadString('assets/labels/labels.txt');
+    // Split the content into lines and store them in labelList
+    final labelList = labelsData.split('\n').map((line) => line.trim()).toList();
+    // Remove any empty lines from the list
+    labelList.removeWhere((label) => label.isEmpty);
+
     //pick an image
 
     final XFile? image = await _picker.pickImage(

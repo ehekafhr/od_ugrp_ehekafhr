@@ -39,6 +39,8 @@ dependencies:
   flutter_pytorch: ^1.0.1
   image_picker: ^1.0.4
   camera: ^0.9.4+11
+  flutter_tts:
+  gif: ^2.2.0
 
 dev_dependencies:
   flutter_test:
