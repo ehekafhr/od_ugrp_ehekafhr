@@ -7,7 +7,7 @@ import 'package:flutter_pytorch/pigeon.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:camera/camera.dart';
 import 'dart:async';
-// import 'LoaderState.dart';
+import 'LoaderState.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 
 
@@ -144,14 +144,22 @@ class _HomeScreenState extends State<HomeScreen> {
     labelList.removeWhere((label) => label.isEmpty);
 
     //pick an image
-
-    final XFile? image = await _picker.pickImage(
-        source: ImageSource.gallery, maxWidth: 200, maxHeight: 200);
+    //ksh revised 10-26. Use Camera and Disable Gallery
+    final XFile? image = await _picker.pickImage(source: ImageSource.camera);
+    //final XFile? image = await _picker.pickImage(
+    //    source: ImageSource.gallery, maxWidth: 200, maxHeight: 200);
     objDetect = await _objectModel.getImagePrediction(
         await File(image!.path).readAsBytes(),
         minimumScore: 0.05,
         IOUThershold: 0.1);
+
+    //ksh revised 10-26. TTS
+    String tts_message = '';
+
     objDetect.forEach((element) {
+      //ksh revised 10-26. TTS
+      tts_message += labelList[element!.classIndex] + ". ";
+
       print({
         "score": element?.score,
         "className": element?.className,
@@ -166,6 +174,12 @@ class _HomeScreenState extends State<HomeScreen> {
         },
       });
     });
+
+    //ksh revised 10-26. TTS
+    tts.speak(tts_message);
+    //ksh revised 10-26. I don't know why use this.
+    //scheduleTimeout(5 * 1000);
+
     setState(() {
       _image = File(image!.path);
     });
