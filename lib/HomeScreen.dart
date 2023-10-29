@@ -10,7 +10,6 @@ import 'dart:async';
 import 'LoaderState.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 
-
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -20,12 +19,10 @@ class HomeScreen extends StatefulWidget {
 
 
 class _HomeScreenState extends State<HomeScreen> {
-  File? _imageFile;
   late ModelObjectDetection _objectModel;
   String? _imagePrediction;
   List? _prediction;
-  File? _image;
-  final ImagePicker _picker = ImagePicker();
+  File _curCamera = File('assets/images/basic_image.png');
   bool objectDetection = false;
   List<ResultObjectDetection?> objDetect = [];
   //ksh revised 10-26. I don't know why use
@@ -36,8 +33,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   //ddr revised 10-25. what should mode do?
 
-  List<String> modelNames = ["model1.torchscript", "model2.torchscript", "model3.torchscript"];
-  List<String> labelNames = ["labels1.txt", "labels2.txt", "labels3.txt"];
+  List<String> modelNames = ["yolov5s.torchscript", "model2.torchscript", "model3.torchscript"];
+  List<String> labelNames = ["labels.txt", "labels2.txt", "labels3.txt"];
 
   int mode = 1;
   void leftSlide(){
@@ -85,6 +82,7 @@ class _HomeScreenState extends State<HomeScreen> {
     //ksh revised 10-26. TTS
     tts.setSpeechRate(0.3);
     tts.setLanguage("ko-KR");
+    runObjectDetection();
   }
 
   Future loadModel() async {
@@ -93,7 +91,7 @@ class _HomeScreenState extends State<HomeScreen> {
       _objectModel = await FlutterPytorch.loadObjectDetectionModel(
         //Remeber here 80 value represents number of classes for custom model it will be different don't forget to change this.
           pathObjectDetectionModel, 80, 640, 640,
-          labelPath: "assets/labels/labels.txt");
+          labelPath: "assets/labels/${labelNames[0]}");
     } catch (e) {
       if (e is PlatformException) {
         print("only supported for android, Error is $e");
@@ -101,35 +99,27 @@ class _HomeScreenState extends State<HomeScreen> {
         print("Error is $e");
       }
     }
+    await Future.delayed(const Duration(milliseconds:100));
   }
 
-  //ksh revised 10-26. Maybe Use Camera
-  /*
-  void handleTimeout() {
-    setState(() {
-      firststate = true;
-    });
-  }
-  Timer scheduleTimeout([int milliseconds = 10000]) =>
-      Timer(Duration(milliseconds: milliseconds), handleTimeout);
-  */
-
-  //ddr revised 10-25. Camera
-  List<CameraDescription> ? cameras;
+  //ddr revised 10-25. Camera 10-29. 승주 code 참조해서 변환함.
   CameraController? controller;
-  loadCamera() async{
-    cameras = await availableCameras();
+  Future loadCamera() async{
+    List<CameraDescription> cameras = await availableCameras();
     if(cameras != null) {
-      controller = CameraController(cameras![0], ResolutionPreset.max);
-      controller!.initialize().then((_) {
-        if (!mounted) {
-          return;
-        }
-        setState(() {});
-      });
-    }else{
-      print("Error: No camera found");
+      try{
+        controller= CameraController(cameras[0], ResolutionPreset.high);
+        await controller!.initialize();
+      } catch (e) {
+        print(e);
+        print("Is the error");
+      }
     }
+    else{
+      print("Failed");
+    }
+
+    await Future.delayed(const Duration(milliseconds:100));
   }
 
   Future runObjectDetection() async {
@@ -148,14 +138,15 @@ class _HomeScreenState extends State<HomeScreen> {
     labelList.removeWhere((label) => label.isEmpty);
 
     //pick an image
-    //ksh revised 10-26. Use Camera and Disable Gallery
-    final XFile? image = await _picker.pickImage(source: ImageSource.camera);
+    //final XFile? image = await _picker.pickImage(source: ImageSource.camera);
+    final XFile image = await controller!.takePicture();
+    _curCamera =File(image!.path);
     //final XFile? image = await _picker.pickImage(
     //    source: ImageSource.gallery, maxWidth: 200, maxHeight: 200);
     objDetect = await _objectModel.getImagePrediction(
         await File(image!.path).readAsBytes(),
         minimumScore: 0.01,
-        IOUThershold: 0.1);
+        IOUThershold: 0.01);
 
     //ksh revised 10-26. TTS
     String tts_message = '';
@@ -185,47 +176,9 @@ class _HomeScreenState extends State<HomeScreen> {
     //scheduleTimeout(5 * 1000);
 
     setState(() {
-      _image = File(image!.path);
     });
   }
 
-  Future runObjectDetectionLong() async {
-
-    final String labelsData = await rootBundle.loadString('assets/labels/labels.txt');
-    // Split the content into lines and store them in labelList
-    final labelList = labelsData.split('\n').map((line) => line.trim()).toList();
-    // Remove any empty lines from the list
-    labelList.removeWhere((label) => label.isEmpty);
-
-    //pick an image
-    String tts_message = '';
-    final XFile image = await controller!.takePicture();
-    objDetect = await _objectModel.getImagePrediction(
-        await File(image!.path).readAsBytes(),
-        minimumScore: 0.01,
-        IOUThershold: 0.01);
-    objDetect.forEach((element) {
-      tts_message += labelList[element!.classIndex] + ". ";
-      print({
-        "score": element?.score,
-        "className": element?.className,
-        "class": element?.classIndex,
-        "rect": {
-          "left": element?.rect.left,
-          "top": element?.rect.top,
-          "width": element?.rect.width,
-          "height": element?.rect.height,
-          "right": element?.rect.right,
-          "bottom": element?.rect.bottom,
-
-        },
-      });
-      tts.speak(tts_message);
-    });
-    setState(() {
-      _image = File(image!.path);
-    });
-  }
   double _x=0;
   double _y=0;
 
@@ -256,14 +209,18 @@ class _HomeScreenState extends State<HomeScreen> {
             },
             onTap: () {},
             onLongPress: () {
-              runObjectDetectionLong();
+              runObjectDetection();
             },
             child: FractionallySizedBox(
               widthFactor: 1.0,
               heightFactor: 1.0,
               child: ElevatedButton(
                 onPressed: () {runObjectDetection();},
-                child: Text("$mode+"),
+                child: Image.file(
+                  _curCamera,
+                  fit: BoxFit.cover
+
+                ),
               ),
             ),
           ),
