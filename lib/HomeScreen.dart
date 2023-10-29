@@ -30,6 +30,9 @@ class _HomeScreenState extends State<HomeScreen> {
   //bool message = true;
   //ksh revised 10-26. TTS
   final FlutterTts tts = FlutterTts();
+  double _x=0;
+  double _y=0;
+  bool detecting = false;
 
   //ddr revised 10-25. what should mode do?
 
@@ -151,9 +154,12 @@ class _HomeScreenState extends State<HomeScreen> {
     //ksh revised 10-26. TTS
     String tts_message = '';
 
-    objDetect.forEach((element) {
+    List<ResultObjectDetection> results = [];
+
+    for (var element in objDetect) {
       //ksh revised 10-26. TTS
-      tts_message += labelList[element!.classIndex] + ". ";
+      tts_message += "${labelList[element!.classIndex]}. ";
+      results.add(element);
 
       print({
         "score": element?.score,
@@ -168,7 +174,8 @@ class _HomeScreenState extends State<HomeScreen> {
           "bottom": element?.rect.bottom,
         },
       });
-    });
+
+    }
 
     //ksh revised 10-26. TTS
     tts.speak(tts_message);
@@ -177,12 +184,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
     setState(() {
     });
+    return results;
   }
 
-  double _x=0;
-  double _y=0;
-
-  bool detecting = false;
 
   @override
   Widget build(BuildContext context) {
@@ -198,18 +202,27 @@ class _HomeScreenState extends State<HomeScreen> {
                 _x += details.delta.dx;
                 _y += details.delta.dy;
               });
-              if(_x>300){
-                rightSlide();
-                _x = 0;
-              }
-              else if(_x<-300){
-                leftSlide();
-                _x = 0;
+              if(!detecting) {
+                if (_x > 300) {
+                  rightSlide();
+                  _x = 0;
+                }
+                else if (_x < -300) {
+                  leftSlide();
+                  _x = 0;
+                }
               }
             },
             onTap: () {},
             onLongPress: () {
-              runObjectDetection();
+              if(!detecting){
+                detecting = true;
+                runObjectDetection();
+                tts.speak("디텍트 모드");
+              }else{
+                detecting = false;
+                tts.speak("일반 모드");
+              }
             },
             child: FractionallySizedBox(
               widthFactor: 1.0,
