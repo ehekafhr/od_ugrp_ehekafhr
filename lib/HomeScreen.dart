@@ -35,6 +35,10 @@ class _HomeScreenState extends State<HomeScreen> {
   final FlutterTts tts = FlutterTts();
 
   //ddr revised 10-25. what should mode do?
+
+  List<String> modelNames = ["model1.torchscript", "model2.torchscript", "model3.torchscript"];
+  List<String> labelNames = ["labels1.txt", "labels2.txt", "labels3.txt"];
+
   int mode = 1;
   void leftSlide(){
     if(mode<3) {
@@ -84,7 +88,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future loadModel() async {
-    String pathObjectDetectionModel = "assets/models/yolov5s.torchscript";
+    String pathObjectDetectionModel = "assets/models/${modelNames[0]}";
     try {
       _objectModel = await FlutterPytorch.loadObjectDetectionModel(
         //Remeber here 80 value represents number of classes for custom model it will be different don't forget to change this.
@@ -137,7 +141,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     //ksh revised 10-26. set Object Detection Output List
     // Load the file using rootBundle
-    final String labelsData = await rootBundle.loadString('assets/labels/labels.txt');
+    final String labelsData = await rootBundle.loadString('assets/labels/${labelNames[0]}');
     // Split the content into lines and store them in labelList
     final labelList = labelsData.split('\n').map((line) => line.trim()).toList();
     // Remove any empty lines from the list
@@ -150,7 +154,7 @@ class _HomeScreenState extends State<HomeScreen> {
     //    source: ImageSource.gallery, maxWidth: 200, maxHeight: 200);
     objDetect = await _objectModel.getImagePrediction(
         await File(image!.path).readAsBytes(),
-        minimumScore: 0.05,
+        minimumScore: 0.01,
         IOUThershold: 0.1);
 
     //ksh revised 10-26. TTS
@@ -186,14 +190,22 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future runObjectDetectionLong() async {
-    //pick an image
 
+    final String labelsData = await rootBundle.loadString('assets/labels/labels.txt');
+    // Split the content into lines and store them in labelList
+    final labelList = labelsData.split('\n').map((line) => line.trim()).toList();
+    // Remove any empty lines from the list
+    labelList.removeWhere((label) => label.isEmpty);
+
+    //pick an image
+    String tts_message = '';
     final XFile image = await controller!.takePicture();
     objDetect = await _objectModel.getImagePrediction(
         await File(image!.path).readAsBytes(),
-        minimumScore: 0.05,
-        IOUThershold: 0.1);
+        minimumScore: 0.01,
+        IOUThershold: 0.01);
     objDetect.forEach((element) {
+      tts_message += labelList[element!.classIndex] + ". ";
       print({
         "score": element?.score,
         "className": element?.className,
@@ -205,8 +217,10 @@ class _HomeScreenState extends State<HomeScreen> {
           "height": element?.rect.height,
           "right": element?.rect.right,
           "bottom": element?.rect.bottom,
+
         },
       });
+      tts.speak(tts_message);
     });
     setState(() {
       _image = File(image!.path);
