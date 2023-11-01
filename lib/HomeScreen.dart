@@ -9,7 +9,7 @@ import 'package:camera/camera.dart';
 import 'dart:async';
 import 'LoaderState.dart';
 import 'package:flutter_tts/flutter_tts.dart';
-
+import 'dart:math';
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -32,6 +32,8 @@ class _HomeScreenState extends State<HomeScreen> {
   final FlutterTts tts = FlutterTts();
   double _x=0;
   double _y=0;
+  double x = 0;
+  double y = 0;
   bool detecting = false;
 
   //ddr revised 10-25. what should mode do?
@@ -46,6 +48,7 @@ class _HomeScreenState extends State<HomeScreen> {
     } else {
       mode = 1;
     }
+    HapticFeedback.lightImpact();
 
     //ksh revised 10-26. TTS
     String mode_kr = '';
@@ -63,7 +66,7 @@ class _HomeScreenState extends State<HomeScreen> {
     } else {
       mode = 3;
     }
-
+    HapticFeedback.lightImpact();
     //ksh revised 10-26. TTS
     String mode_kr = '';
     if(mode == 1) mode_kr = "일";
@@ -186,7 +189,77 @@ class _HomeScreenState extends State<HomeScreen> {
     });
     return results;
   }
+  Future runObjectDetectionDetect(x,y) async {
+    //ksh revised 10-26. I don't know why need.
+    /*setState(() {
+      firststate = false;
+      message = false;
+    });*/
 
+    //ksh revised 10-26. set Object Detection Output List
+    // Load the file using rootBundle
+    final String labelsData = await rootBundle.loadString('assets/labels/${labelNames[0]}');
+    // Split the content into lines and store them in labelList
+    final labelList = labelsData.split('\n').map((line) => line.trim()).toList();
+    // Remove any empty lines from the list
+    labelList.removeWhere((label) => label.isEmpty);
+
+    //pick an image
+    //final XFile? image = await _picker.pickImage(source: ImageSource.camera);
+    final XFile image = await controller!.takePicture();
+    _curCamera =File(image!.path);
+    //final XFile? image = await _picker.pickImage(
+    //    source: ImageSource.gallery, maxWidth: 200, maxHeight: 200);
+    objDetect = await _objectModel.getImagePrediction(
+        await File(image!.path).readAsBytes(),
+        minimumScore: 0.01,
+        IOUThershold: 0.01);
+
+    //ksh revised 10-26. TTS
+    String tts_message = '';
+
+    List<ResultObjectDetection> results = [];
+    double minDistance = 2;
+    var obj  = '';
+    for (var element in objDetect) {
+      //ksh revised 10-26. TTS
+
+      tts_message += "${labelList[element!.classIndex]}. ";
+      results.add(element);
+      var xDistance = min(((element.rect.left)-x).abs(),((element.rect.right)-x).abs());
+      var yDistance = min(((element.rect.bottom)-y).abs(),((element.rect.top)-y).abs());
+      print(xDistance);
+      print("Is the Xdistance");
+      var distance = xDistance*xDistance+yDistance*yDistance;
+      if (distance < minDistance){
+        obj = "${labelList[element!.classIndex]}. ";
+        minDistance = distance;
+      }
+      print({
+        "score": element?.score,
+        "className": element?.className,
+        "class": element?.classIndex,
+        "rect": {
+          "left": element?.rect.left,
+          "top": element?.rect.top,
+          "width": element?.rect.width,
+          "height": element?.rect.height,
+          "right": element?.rect.right,
+          "bottom": element?.rect.bottom,
+        },
+      });
+
+    }
+
+    //ksh revised 10-26. TTS
+    tts.speak(obj);
+    //ksh revised 10-26. I don't know why use this.
+    //scheduleTimeout(5 * 1000);
+
+    setState(() {
+    });
+    return results;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -213,13 +286,24 @@ class _HomeScreenState extends State<HomeScreen> {
                 }
               }
             },
-            onTap: () {},
+            onTapDown: (TapDownDetails tapDetails) {
+
+              var x = tapDetails.globalPosition.dx/MediaQuery.of(context).size.width;
+              var y = tapDetails.globalPosition.dy/MediaQuery.of(context).size.height;
+              if(!detecting){
+                runObjectDetection();
+              }
+              else{
+                runObjectDetectionDetect(x,y);
+              }
+            },
             onLongPress: () {
               if(!detecting){
                 detecting = true;
-                runObjectDetection();
+                HapticFeedback.lightImpact();
                 tts.speak("디텍트 모드");
               }else{
+                HapticFeedback.lightImpact();
                 detecting = false;
                 tts.speak("일반 모드");
               }
@@ -228,11 +312,13 @@ class _HomeScreenState extends State<HomeScreen> {
               widthFactor: 1.0,
               heightFactor: 1.0,
               child: ElevatedButton(
-                onPressed: () {runObjectDetection();},
-                child: Image.file(
-                  _curCamera,
-                  fit: BoxFit.cover
-
+                onPressed: () {
+                  HapticFeedback.heavyImpact();
+                  },
+                child: FutureBuilder<void>(
+                  builder: (context, snapshot){
+                    return CameraPreview(controller!);
+                  }
                 ),
               ),
             ),
