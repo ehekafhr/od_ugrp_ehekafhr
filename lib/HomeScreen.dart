@@ -22,16 +22,12 @@ class HomeScreen extends StatefulWidget {
 
 
 class _HomeScreenState extends State<HomeScreen> {
-  late ModelObjectDetection _objectModel;
-  String? _imagePrediction;
-  List? _prediction;
+  late List<ModelObjectDetection> _objectModel;
+
   File _curCamera = File('assets/images/basic_image.png');
   bool objectDetection = false;
   List<ResultObjectDetection?> objDetect = [];
-  //ksh revised 10-26. I don't know why use
-  //bool firststate = false;
-  //bool message = true;
-  //ksh revised 10-26. TTS
+
   final FlutterTts tts = FlutterTts();
   double _x=0;
   double _y=0;
@@ -41,10 +37,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
   //ddr revised 10-25. what should mode do?
 
-  List<String> modelNames = ["yolov5s.torchscript", "model2.torchscript", "model3.torchscript"];
-  List<String> labelNames = ["labels.txt", "labels2.txt", "labels3.txt"];
+  List<String> modelNames = ["model1.torchscript", "model2.torchscript", "model3.torchscript"]; //model들의 이름. 내용물 변경 필요
+  List<String> labelNames = ["labels.txt", "labels2.txt", "labels3.txt"]; //똑같이, 내용물 변경 필요.(asset/model asset/labels)
 
-  int mode = 1;
+  int mode = 1; //기본 모드. mode 1 2 3 있음.
+  //왼쪽으로 밀기
   void leftSlide(){
     if(mode<3) {
       mode +=1;
@@ -65,6 +62,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     sleep(Duration(milliseconds:500));
   }
+  //오른쪽으로 밀기. haptic은 왠지 모르겠는데 안됨..
   void rightSlide(){
     if(mode==3){
     }
@@ -89,7 +87,9 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     // TODO: implement initState
     super.initState();
-    loadModel();
+    loadModel(0);
+    loadModel(1);
+    loadModel(2);
     loadCamera();
 
     //ksh revised 10-26. TTS
@@ -99,13 +99,13 @@ class _HomeScreenState extends State<HomeScreen> {
      //zx is ..
   }
 
-  Future loadModel() async {
-    String pathObjectDetectionModel = "assets/models/${modelNames[0]}";
+  Future loadModel(idx) async {
+    String pathObjectDetectionModel = "assets/models/${modelNames[idx]}";
     try {
-      _objectModel = await FlutterPytorch.loadObjectDetectionModel(
+      _objectModel[idx] = await FlutterPytorch.loadObjectDetectionModel(
         //Remeber here 80 value represents number of classes for custom model it will be different don't forget to change this.
           pathObjectDetectionModel, 80, 640, 640,
-          labelPath: "assets/labels/${labelNames[0]}");
+          labelPath: "assets/labels/${labelNames[idx]}");
     } catch (e) {
       if (e is PlatformException) {
         print("only supported for android, Error is $e");
@@ -118,6 +118,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   //ddr revised 10-25. Camera 10-29. 승주 code 참조해서 변환함.
   CameraController? controller;
+
   Future loadCamera() async{
     List<CameraDescription> cameras = await availableCameras();
     if(cameras != null) {
@@ -135,8 +136,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
     await Future.delayed(const Duration(milliseconds:100));
   }
-
-
 
   Future runObjectDetection(mode) async {
     //ksh revised 10-26. I don't know why need.
@@ -160,7 +159,7 @@ class _HomeScreenState extends State<HomeScreen> {
     //final XFile? image = await _picker.pickImage(
     //    source: ImageSource.gallery, maxWidth: 200, maxHeight: 200);
     if(mode !=3) {
-      objDetect = await _objectModel.getImagePrediction(
+      objDetect = await _objectModel[mode].getImagePrediction(
           await File(image!.path).readAsBytes(),
           minimumScore: 0.01,
           IOUThershold: 0.01);
@@ -229,7 +228,7 @@ class _HomeScreenState extends State<HomeScreen> {
     _curCamera =File(image!.path);
     //final XFile? image = await _picker.pickImage(
     //    source: ImageSource.gallery, maxWidth: 200, maxHeight: 200);
-    objDetect = await _objectModel.getImagePrediction(
+    objDetect = await _objectModel[mode].getImagePrediction(
         await File(image!.path).readAsBytes(),
         minimumScore: 0.01,
         IOUThershold: 0.01);
