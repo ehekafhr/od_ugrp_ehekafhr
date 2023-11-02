@@ -190,7 +190,9 @@ class _HomeScreenState extends State<HomeScreen> {
         });
       }
       //ksh revised 10-26. TTS
-      tts.speak(tts_message);
+      if(!detecting){
+        tts.speak(tts_message);
+      }
       //ksh revised 10-26. I don't know why use this.
       //scheduleTimeout(5 * 1000);
 
@@ -202,9 +204,6 @@ class _HomeScreenState extends State<HomeScreen> {
     else{
       final ImagePicker _picker = ImagePicker();
       final XFile? file = await _picker.pickImage(source: ImageSource.gallery);
-      await zx.startCameraProcessing();
-
-
 
     }
 
@@ -245,9 +244,13 @@ class _HomeScreenState extends State<HomeScreen> {
       //ksh revised 10-26. TTS
 
       tts_message += "${labelList[element!.classIndex]}. ";
+      print("$x $y");
+      print(element.rect.left);
       results.add(element);
       var xDistance = min(((element.rect.left)-x).abs(),((element.rect.right)-x).abs());
       var yDistance = min(((element.rect.bottom)-y).abs(),((element.rect.top)-y).abs());
+      if(element.rect.right>x && element.rect.left<x) xDistance = 0;
+      if(element.rect.top>y && element.rect.bottom<y) yDistance = 0;
       print(xDistance);
       print("Is the Xdistance");
       var distance = xDistance*xDistance+yDistance*yDistance;
@@ -272,7 +275,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     //ksh revised 10-26. TTS
-    tts.speak(obj);
+    if(detecting) tts.speak(obj);
     //ksh revised 10-26. I don't know why use this.
     //scheduleTimeout(5 * 1000);
 
@@ -314,13 +317,11 @@ class _HomeScreenState extends State<HomeScreen> {
               }
               else{
                 if(detecting){
-                  runObjectDetectionDetect(x,y);
+                  runObjectDetectionDetect(x,(1-y));
                 }
-              }
-            },
-            onTap: (){
-              if(!detecting){
-                runObjectDetection(mode);
+                else{
+                  runObjectDetection(mode);
+                }
               }
             },
             onLongPress: () {
