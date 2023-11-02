@@ -41,6 +41,8 @@ dependencies:
   camera: ^0.9.4+11
   flutter_tts:
   gif: ^2.2.0
+  flutter_zxing: ^1.4.1
+
 
 dev_dependencies:
   flutter_test:

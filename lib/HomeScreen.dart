@@ -10,6 +10,9 @@ import 'dart:async';
 import 'LoaderState.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'dart:math';
+
+import 'package:flutter_zxing/flutter_zxing.dart';
+
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -88,7 +91,12 @@ class _HomeScreenState extends State<HomeScreen> {
     //ksh revised 10-26. TTS
     tts.setSpeechRate(0.3);
     tts.setLanguage("ko-KR");
-    runObjectDetection();
+
+    zx.startCameraProcessing(); //zx is ..
+  }
+  @override
+  void dispose(){
+    zx.stopCameraProcessing();
   }
 
   Future loadModel() async {
@@ -128,7 +136,7 @@ class _HomeScreenState extends State<HomeScreen> {
     await Future.delayed(const Duration(milliseconds:100));
   }
 
-  Future runObjectDetection() async {
+  Future runObjectDetection(mode) async {
     //ksh revised 10-26. I don't know why need.
     /*setState(() {
       firststate = false;
@@ -149,45 +157,52 @@ class _HomeScreenState extends State<HomeScreen> {
     _curCamera =File(image!.path);
     //final XFile? image = await _picker.pickImage(
     //    source: ImageSource.gallery, maxWidth: 200, maxHeight: 200);
-    objDetect = await _objectModel.getImagePrediction(
-        await File(image!.path).readAsBytes(),
-        minimumScore: 0.01,
-        IOUThershold: 0.01);
+    if(mode !=3) {
+      objDetect = await _objectModel.getImagePrediction(
+          await File(image!.path).readAsBytes(),
+          minimumScore: 0.01,
+          IOUThershold: 0.01);
 
-    //ksh revised 10-26. TTS
-    String tts_message = '';
-
-    List<ResultObjectDetection> results = [];
-
-    for (var element in objDetect) {
       //ksh revised 10-26. TTS
-      tts_message += "${labelList[element!.classIndex]}. ";
-      results.add(element);
+      String tts_message = '';
 
-      print({
-        "score": element?.score,
-        "className": element?.className,
-        "class": element?.classIndex,
-        "rect": {
-          "left": element?.rect.left,
-          "top": element?.rect.top,
-          "width": element?.rect.width,
-          "height": element?.rect.height,
-          "right": element?.rect.right,
-          "bottom": element?.rect.bottom,
-        },
+      List<ResultObjectDetection> results = [];
+
+      for (var element in objDetect) {
+        //ksh revised 10-26. TTS
+        tts_message += "${labelList[element!.classIndex]}. ";
+        results.add(element);
+
+        print({
+          "score": element?.score,
+          "className": element?.className,
+          "class": element?.classIndex,
+          "rect": {
+            "left": element?.rect.left,
+            "top": element?.rect.top,
+            "width": element?.rect.width,
+            "height": element?.rect.height,
+            "right": element?.rect.right,
+            "bottom": element?.rect.bottom,
+          },
+        });
+      }
+      //ksh revised 10-26. TTS
+      tts.speak(tts_message);
+      //ksh revised 10-26. I don't know why use this.
+      //scheduleTimeout(5 * 1000);
+
+      setState(() {
       });
-
+      return results;
+    }
+    //mode 3.
+    else{
+      Code? resultFromXFile = await zx.readBarcodeImagePath(image);
+      print(resultFromXFile);
+      print("Is the result");
     }
 
-    //ksh revised 10-26. TTS
-    tts.speak(tts_message);
-    //ksh revised 10-26. I don't know why use this.
-    //scheduleTimeout(5 * 1000);
-
-    setState(() {
-    });
-    return results;
   }
   Future runObjectDetectionDetect(x,y) async {
     //ksh revised 10-26. I don't know why need.
@@ -290,11 +305,16 @@ class _HomeScreenState extends State<HomeScreen> {
 
               var x = tapDetails.globalPosition.dx/MediaQuery.of(context).size.width;
               var y = tapDetails.globalPosition.dy/MediaQuery.of(context).size.height;
-              if(!detecting){
-                runObjectDetection();
+              if(mode == 3){
+                 runObjectDetection(mode);
               }
               else{
-                runObjectDetectionDetect(x,y);
+                if(!detecting){
+                  runObjectDetection(mode);
+                }
+                else{
+                  runObjectDetectionDetect(x,y);
+                }
               }
             },
             onLongPress: () {
