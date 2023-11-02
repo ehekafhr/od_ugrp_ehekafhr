@@ -87,9 +87,9 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     // TODO: implement initState
     super.initState();
-    loadModel(0);
-    loadModel(1);
-    loadModel(2);
+    loadModel(0,80);
+    loadModel(1,80); //두번째 숫자는 label의 숫자.
+    loadModel(2,80); //두번째 숫자는 label의 숫자.
     loadCamera();
 
     //ksh revised 10-26. TTS
@@ -99,12 +99,12 @@ class _HomeScreenState extends State<HomeScreen> {
      //zx is ..
   }
 
-  Future loadModel(idx) async {
+  Future loadModel(idx,count) async {
     String pathObjectDetectionModel = "assets/models/${modelNames[idx]}";
     try {
       _objectModel[idx] = await FlutterPytorch.loadObjectDetectionModel(
         //Remeber here 80 value represents number of classes for custom model it will be different don't forget to change this.
-          pathObjectDetectionModel, 80, 640, 640,
+          pathObjectDetectionModel, count, 640, 640,
           labelPath: "assets/labels/${labelNames[idx]}");
     } catch (e) {
       if (e is PlatformException) {
@@ -138,14 +138,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future runObjectDetection(mode) async {
-    //ksh revised 10-26. I don't know why need.
-    /*setState(() {
-      firststate = false;
-      message = false;
-    });*/
 
-    //ksh revised 10-26. set Object Detection Output List
-    // Load the file using rootBundle
     final String labelsData = await rootBundle.loadString('assets/labels/${labelNames[0]}');
     // Split the content into lines and store them in labelList
     final labelList = labelsData.split('\n').map((line) => line.trim()).toList();
@@ -156,8 +149,7 @@ class _HomeScreenState extends State<HomeScreen> {
     //final XFile? image = await _picker.pickImage(source: ImageSource.camera);
     final XFile image = await controller!.takePicture();
     _curCamera =File(image!.path);
-    //final XFile? image = await _picker.pickImage(
-    //    source: ImageSource.gallery, maxWidth: 200, maxHeight: 200);
+
     if(mode !=3) {
       objDetect = await _objectModel[mode].getImagePrediction(
           await File(image!.path).readAsBytes(),
@@ -174,6 +166,7 @@ class _HomeScreenState extends State<HomeScreen> {
         tts_message += "${labelList[element!.classIndex]}. ";
         results.add(element);
 
+        //그냥 변수들 확인용. print된 것들은 run에서 확인 가능.
         print({
           "score": element?.score,
           "className": element?.className,
@@ -199,7 +192,7 @@ class _HomeScreenState extends State<HomeScreen> {
       });
       return results;
     }
-    //mode 3.
+    //mode 3. test용, 구현 필요
     else{
       final ImagePicker _picker = ImagePicker();
       final XFile? file = await _picker.pickImage(source: ImageSource.gallery);
@@ -207,12 +200,9 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
   }
+  //Detect mode에서 동작하는 runObjectDetection. mode는 전역 변수이기 때문에 문제 x.
   Future runObjectDetectionDetect(x,y) async {
-    //ksh revised 10-26. I don't know why need.
-    /*setState(() {
-      firststate = false;
-      message = false;
-    });*/
+
 
     //ksh revised 10-26. set Object Detection Output List
     // Load the file using rootBundle
@@ -291,7 +281,9 @@ class _HomeScreenState extends State<HomeScreen> {
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(2.0),
+          //슬라이드
           child: GestureDetector(
+
             onPanUpdate: (details) {
               setState(() {
                 _x += details.delta.dx;
@@ -308,6 +300,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 }
               }
             },
+            //짧터치
             onTapDown: (TapDownDetails tapDetails) {
               var x = tapDetails.globalPosition.dx/MediaQuery.of(context).size.width;
               var y = tapDetails.globalPosition.dy/MediaQuery.of(context).size.height;
@@ -343,6 +336,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   },
                 child: FutureBuilder<void>(
                   builder: (context, snapshot){
+                    //카메라 뷰 보여주기. 편의를 위함.
                     return CameraPreview(controller!);
                   }
                 ),
