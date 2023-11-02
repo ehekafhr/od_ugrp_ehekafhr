@@ -10,8 +10,8 @@ import 'dart:async';
 import 'LoaderState.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'dart:math';
-
 import 'package:flutter_zxing/flutter_zxing.dart';
+import 'dart:typed_data';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -51,6 +51,8 @@ class _HomeScreenState extends State<HomeScreen> {
     } else {
       mode = 1;
     }
+    if(mode==3){
+    }
     HapticFeedback.lightImpact();
 
     //ksh revised 10-26. TTS
@@ -64,6 +66,8 @@ class _HomeScreenState extends State<HomeScreen> {
     sleep(Duration(milliseconds:500));
   }
   void rightSlide(){
+    if(mode==3){
+    }
     if(mode>1){
       mode-=1;
     } else {
@@ -92,11 +96,7 @@ class _HomeScreenState extends State<HomeScreen> {
     tts.setSpeechRate(0.3);
     tts.setLanguage("ko-KR");
 
-    zx.startCameraProcessing(); //zx is ..
-  }
-  @override
-  void dispose(){
-    zx.stopCameraProcessing();
+     //zx is ..
   }
 
   Future loadModel() async {
@@ -135,6 +135,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
     await Future.delayed(const Duration(milliseconds:100));
   }
+
+
 
   Future runObjectDetection(mode) async {
     //ksh revised 10-26. I don't know why need.
@@ -198,9 +200,12 @@ class _HomeScreenState extends State<HomeScreen> {
     }
     //mode 3.
     else{
-      Code? resultFromXFile = await zx.readBarcodeImagePath(image);
-      print(resultFromXFile);
-      print("Is the result");
+      final ImagePicker _picker = ImagePicker();
+      final XFile? file = await _picker.pickImage(source: ImageSource.gallery);
+      await zx.startCameraProcessing();
+
+
+
     }
 
   }
@@ -302,26 +307,27 @@ class _HomeScreenState extends State<HomeScreen> {
               }
             },
             onTapDown: (TapDownDetails tapDetails) {
-
               var x = tapDetails.globalPosition.dx/MediaQuery.of(context).size.width;
               var y = tapDetails.globalPosition.dy/MediaQuery.of(context).size.height;
               if(mode == 3){
                  runObjectDetection(mode);
               }
               else{
-                if(!detecting){
-                  runObjectDetection(mode);
-                }
-                else{
+                if(detecting){
                   runObjectDetectionDetect(x,y);
                 }
+              }
+            },
+            onTap: (){
+              if(!detecting){
+                runObjectDetection(mode);
               }
             },
             onLongPress: () {
               if(!detecting){
                 detecting = true;
                 HapticFeedback.lightImpact();
-                tts.speak("디텍트 모드");
+                tts.speak("디텍트 모드.");
               }else{
                 HapticFeedback.lightImpact();
                 detecting = false;
