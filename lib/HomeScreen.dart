@@ -22,11 +22,11 @@ class HomeScreen extends StatefulWidget {
 
 
 class _HomeScreenState extends State<HomeScreen> {
-  late List<ModelObjectDetection> _objectModel;
+  final List<ModelObjectDetection> _objectModel = List.empty(growable: true);
 
   File _curCamera = File('assets/images/basic_image.png');
   bool objectDetection = false;
-  List<ResultObjectDetection?> objDetect = [];
+  List<ResultObjectDetection?> objDetect = List.empty(growable : true);
 
   final FlutterTts tts = FlutterTts();
   double _x=0;
@@ -100,10 +100,10 @@ class _HomeScreenState extends State<HomeScreen> {
   Future loadModel(idx,count) async {
     String pathObjectDetectionModel = "assets/models/${modelNames[idx]}";
     try {
-      _objectModel[idx] = await FlutterPytorch.loadObjectDetectionModel(
+      _objectModel.add(await FlutterPytorch.loadObjectDetectionModel(
         //Remeber here 80 value represents number of classes for custom model it will be different don't forget to change this.
           pathObjectDetectionModel, count, 640, 640,
-          labelPath: "assets/labels/${labelNames[idx]}");
+          labelPath: "assets/labels/${labelNames[idx]}"));
     } catch (e) {
       if (e is PlatformException) {
         print("only supported for android, Error is $e");
@@ -111,7 +111,6 @@ class _HomeScreenState extends State<HomeScreen> {
         print("Error is $e");
       }
     }
-    await Future.delayed(const Duration(milliseconds:100));
   }
 
   //ddr revised 10-25. Camera 10-29. 승주 code 참조해서 변환함.
