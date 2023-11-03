@@ -60,7 +60,6 @@ class _HomeScreenState extends State<HomeScreen> {
     String tts_message = '모드 ' + mode_kr + '로 변경되었습니다.';
     tts.speak(tts_message);
 
-    sleep(Duration(milliseconds:500));
   }
   //오른쪽으로 밀기. haptic은 왠지 모르겠는데 안됨..
   void rightSlide(){
@@ -80,7 +79,6 @@ class _HomeScreenState extends State<HomeScreen> {
     String tts_message = '모드 ' + mode_kr + '로 변경되었습니다.';
     tts.speak(tts_message);
 
-    sleep(Duration(milliseconds:500));
   }
 
   @override
@@ -289,12 +287,14 @@ class _HomeScreenState extends State<HomeScreen> {
                 _x += details.delta.dx;
                 _y += details.delta.dy;
               });
-              if(!detecting) {
-                if (_x > 300) {
+            },
+            onPanEnd: (details) {
+              if(!detecting){
+                if(_x>300){
                   rightSlide();
                   _x = 0;
                 }
-                else if (_x < -300) {
+                if(_x<-300){
                   leftSlide();
                   _x = 0;
                 }
