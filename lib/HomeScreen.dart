@@ -22,16 +22,12 @@ class HomeScreen extends StatefulWidget {
 
 
 class _HomeScreenState extends State<HomeScreen> {
-  late ModelObjectDetection _objectModel;
-  String? _imagePrediction;
-  List? _prediction;
+  final List<ModelObjectDetection> _objectModel = List.empty(growable: true);
+
   File _curCamera = File('assets/images/basic_image.png');
   bool objectDetection = false;
-  List<ResultObjectDetection?> objDetect = [];
-  //ksh revised 10-26. I don't know why use
-  //bool firststate = false;
-  //bool message = true;
-  //ksh revised 10-26. TTS
+  List<ResultObjectDetection?> objDetect = List.empty(growable : true);
+
   final FlutterTts tts = FlutterTts();
   double _x=0;
   double _y=0;
@@ -41,10 +37,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
   //ddr revised 10-25. what should mode do?
 
-  List<String> modelNames = ["yolov5s.torchscript", "model2.torchscript", "model3.torchscript"];
-  List<String> labelNames = ["labels.txt", "labels2.txt", "labels3.txt"];
+  List<String> modelNames = ["model1.torchscript", "model2.torchscript", "model3.torchscript"]; //model들의 이름. 내용물 변경 필요
+  List<String> labelNames = ["labels.txt", "labels2.txt", "labels3.txt"]; //똑같이, 내용물 변경 필요.(asset/model asset/labels)
 
-  int mode = 1;
+  int mode = 1; //기본 모드. mode 1 2 3 있음.
+  //왼쪽으로 밀기
   void leftSlide(){
     if(mode<3) {
       mode +=1;
@@ -63,8 +60,8 @@ class _HomeScreenState extends State<HomeScreen> {
     String tts_message = '모드 ' + mode_kr + '로 변경되었습니다.';
     tts.speak(tts_message);
 
-    sleep(Duration(milliseconds:500));
   }
+  //오른쪽으로 밀기. haptic은 왠지 모르겠는데 안됨..
   void rightSlide(){
     if(mode==3){
     }
@@ -82,14 +79,15 @@ class _HomeScreenState extends State<HomeScreen> {
     String tts_message = '모드 ' + mode_kr + '로 변경되었습니다.';
     tts.speak(tts_message);
 
-    sleep(Duration(milliseconds:500));
   }
 
   @override
   void initState() {
     // TODO: implement initState
     super.initState();
-    loadModel();
+    loadModel(0,80);
+    loadModel(1,80); //두번째 숫자는 label의 숫자.
+    loadModel(2,80); //두번째 숫자는 label의 숫자.
     loadCamera();
 
     //ksh revised 10-26. TTS
@@ -99,13 +97,13 @@ class _HomeScreenState extends State<HomeScreen> {
      //zx is ..
   }
 
-  Future loadModel() async {
-    String pathObjectDetectionModel = "assets/models/${modelNames[0]}";
+  Future loadModel(idx,count) async {
+    String pathObjectDetectionModel = "assets/models/${modelNames[idx]}";
     try {
-      _objectModel = await FlutterPytorch.loadObjectDetectionModel(
+      _objectModel.add(await FlutterPytorch.loadObjectDetectionModel(
         //Remeber here 80 value represents number of classes for custom model it will be different don't forget to change this.
-          pathObjectDetectionModel, 80, 640, 640,
-          labelPath: "assets/labels/${labelNames[0]}");
+          pathObjectDetectionModel, count, 640, 640,
+          labelPath: "assets/labels/${labelNames[idx]}"));
     } catch (e) {
       if (e is PlatformException) {
         print("only supported for android, Error is $e");
@@ -113,11 +111,11 @@ class _HomeScreenState extends State<HomeScreen> {
         print("Error is $e");
       }
     }
-    await Future.delayed(const Duration(milliseconds:100));
   }
 
   //ddr revised 10-25. Camera 10-29. 승주 code 참조해서 변환함.
   CameraController? controller;
+
   Future loadCamera() async{
     List<CameraDescription> cameras = await availableCameras();
     if(cameras != null) {
@@ -136,17 +134,8 @@ class _HomeScreenState extends State<HomeScreen> {
     await Future.delayed(const Duration(milliseconds:100));
   }
 
-
-
   Future runObjectDetection(mode) async {
-    //ksh revised 10-26. I don't know why need.
-    /*setState(() {
-      firststate = false;
-      message = false;
-    });*/
 
-    //ksh revised 10-26. set Object Detection Output List
-    // Load the file using rootBundle
     final String labelsData = await rootBundle.loadString('assets/labels/${labelNames[0]}');
     // Split the content into lines and store them in labelList
     final labelList = labelsData.split('\n').map((line) => line.trim()).toList();
@@ -157,10 +146,9 @@ class _HomeScreenState extends State<HomeScreen> {
     //final XFile? image = await _picker.pickImage(source: ImageSource.camera);
     final XFile image = await controller!.takePicture();
     _curCamera =File(image!.path);
-    //final XFile? image = await _picker.pickImage(
-    //    source: ImageSource.gallery, maxWidth: 200, maxHeight: 200);
+
     if(mode !=3) {
-      objDetect = await _objectModel.getImagePrediction(
+      objDetect = await _objectModel[mode].getImagePrediction(
           await File(image!.path).readAsBytes(),
           minimumScore: 0.01,
           IOUThershold: 0.01);
@@ -175,6 +163,7 @@ class _HomeScreenState extends State<HomeScreen> {
         tts_message += "${labelList[element!.classIndex]}. ";
         results.add(element);
 
+        //그냥 변수들 확인용. print된 것들은 run에서 확인 가능.
         print({
           "score": element?.score,
           "className": element?.className,
@@ -190,7 +179,9 @@ class _HomeScreenState extends State<HomeScreen> {
         });
       }
       //ksh revised 10-26. TTS
-      tts.speak(tts_message);
+      if(!detecting){
+        tts.speak(tts_message);
+      }
       //ksh revised 10-26. I don't know why use this.
       //scheduleTimeout(5 * 1000);
 
@@ -198,23 +189,17 @@ class _HomeScreenState extends State<HomeScreen> {
       });
       return results;
     }
-    //mode 3.
+    //mode 3. test용, 구현 필요
     else{
       final ImagePicker _picker = ImagePicker();
       final XFile? file = await _picker.pickImage(source: ImageSource.gallery);
-      await zx.startCameraProcessing();
-
-
 
     }
 
   }
+  //Detect mode에서 동작하는 runObjectDetection. mode는 전역 변수이기 때문에 문제 x.
   Future runObjectDetectionDetect(x,y) async {
-    //ksh revised 10-26. I don't know why need.
-    /*setState(() {
-      firststate = false;
-      message = false;
-    });*/
+
 
     //ksh revised 10-26. set Object Detection Output List
     // Load the file using rootBundle
@@ -230,7 +215,7 @@ class _HomeScreenState extends State<HomeScreen> {
     _curCamera =File(image!.path);
     //final XFile? image = await _picker.pickImage(
     //    source: ImageSource.gallery, maxWidth: 200, maxHeight: 200);
-    objDetect = await _objectModel.getImagePrediction(
+    objDetect = await _objectModel[mode].getImagePrediction(
         await File(image!.path).readAsBytes(),
         minimumScore: 0.01,
         IOUThershold: 0.01);
@@ -245,9 +230,13 @@ class _HomeScreenState extends State<HomeScreen> {
       //ksh revised 10-26. TTS
 
       tts_message += "${labelList[element!.classIndex]}. ";
+      print("$x $y");
+      print(element.rect.left);
       results.add(element);
       var xDistance = min(((element.rect.left)-x).abs(),((element.rect.right)-x).abs());
       var yDistance = min(((element.rect.bottom)-y).abs(),((element.rect.top)-y).abs());
+      if(element.rect.right>x && element.rect.left<x) xDistance = 0;
+      if(element.rect.top>y && element.rect.bottom<y) yDistance = 0;
       print(xDistance);
       print("Is the Xdistance");
       var distance = xDistance*xDistance+yDistance*yDistance;
@@ -272,7 +261,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     //ksh revised 10-26. TTS
-    tts.speak(obj);
+    if(detecting) tts.speak(obj);
     //ksh revised 10-26. I don't know why use this.
     //scheduleTimeout(5 * 1000);
 
@@ -289,23 +278,28 @@ class _HomeScreenState extends State<HomeScreen> {
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(2.0),
+          //슬라이드
           child: GestureDetector(
+
             onPanUpdate: (details) {
               setState(() {
                 _x += details.delta.dx;
                 _y += details.delta.dy;
               });
-              if(!detecting) {
-                if (_x > 300) {
+            },
+            onPanEnd: (details) {
+              if(!detecting){
+                if(_x>300){
                   rightSlide();
                   _x = 0;
                 }
-                else if (_x < -300) {
+                if(_x<-300){
                   leftSlide();
                   _x = 0;
                 }
               }
             },
+            //짧터치
             onTapDown: (TapDownDetails tapDetails) {
               var x = tapDetails.globalPosition.dx/MediaQuery.of(context).size.width;
               var y = tapDetails.globalPosition.dy/MediaQuery.of(context).size.height;
@@ -314,13 +308,11 @@ class _HomeScreenState extends State<HomeScreen> {
               }
               else{
                 if(detecting){
-                  runObjectDetectionDetect(x,y);
+                  runObjectDetectionDetect(x,(1-y));
                 }
-              }
-            },
-            onTap: (){
-              if(!detecting){
-                runObjectDetection(mode);
+                else{
+                  runObjectDetection(mode);
+                }
               }
             },
             onLongPress: () {
@@ -343,6 +335,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   },
                 child: FutureBuilder<void>(
                   builder: (context, snapshot){
+                    //카메라 뷰 보여주기. 편의를 위함.
                     return CameraPreview(controller!);
                   }
                 ),
