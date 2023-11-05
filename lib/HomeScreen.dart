@@ -10,9 +10,8 @@ import 'dart:async';
 import 'LoaderState.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'dart:math';
-import 'package:flutter_zxing/flutter_zxing.dart';
 import 'dart:typed_data';
-
+import 'package:haptic_feedback/haptic_feedback.dart';
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -50,7 +49,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
     if(mode==3){
     }
-    HapticFeedback.lightImpact();
+    Haptics.vibrate(HapticsType.heavy);
 
     //ksh revised 10-26. TTS
     String mode_kr = '';
@@ -70,7 +69,7 @@ class _HomeScreenState extends State<HomeScreen> {
     } else {
       mode = 3;
     }
-    HapticFeedback.lightImpact();
+    Haptics.vibrate(HapticsType.heavy);
     //ksh revised 10-26. TTS
     String mode_kr = '';
     if(mode == 1) mode_kr = "일";
@@ -244,20 +243,6 @@ class _HomeScreenState extends State<HomeScreen> {
         obj = "${labelList[element!.classIndex]}. ";
         minDistance = distance;
       }
-      print({
-        "score": element?.score,
-        "className": element?.className,
-        "class": element?.classIndex,
-        "rect": {
-          "left": element?.rect.left,
-          "top": element?.rect.top,
-          "width": element?.rect.width,
-          "height": element?.rect.height,
-          "right": element?.rect.right,
-          "bottom": element?.rect.bottom,
-        },
-      });
-
     }
 
     //ksh revised 10-26. TTS
@@ -273,8 +258,8 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("OBJECT DETECTOR APP")),
-      backgroundColor: Colors.red,
+      appBar: AppBar(title: const Text("ORVH")),
+      backgroundColor: Colors.blue,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(2.0),
@@ -303,6 +288,7 @@ class _HomeScreenState extends State<HomeScreen> {
             onTapDown: (TapDownDetails tapDetails) {
               var x = tapDetails.globalPosition.dx/MediaQuery.of(context).size.width;
               var y = tapDetails.globalPosition.dy/MediaQuery.of(context).size.height;
+              Haptics.vibrate(HapticsType.heavy);
               if(mode == 3){
                  runObjectDetection(mode);
               }
@@ -316,12 +302,11 @@ class _HomeScreenState extends State<HomeScreen> {
               }
             },
             onLongPress: () {
+              Haptics.vibrate(HapticsType.heavy);
               if(!detecting){
                 detecting = true;
-                HapticFeedback.lightImpact();
                 tts.speak("디텍트 모드.");
               }else{
-                HapticFeedback.lightImpact();
                 detecting = false;
                 tts.speak("일반 모드");
               }
