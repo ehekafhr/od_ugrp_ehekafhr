@@ -398,7 +398,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   builder: (context, snapshot){
                     //카메라 뷰 보여주기. 편의를 위함.
                     return CameraPreview(controller!);
-                  }
+                  }, future: null,
                 ),
               ),
             ),
