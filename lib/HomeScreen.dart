@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -12,6 +13,11 @@ import 'package:flutter_tts/flutter_tts.dart';
 import 'dart:math';
 import 'package:flutter_zxing/flutter_zxing.dart';
 import 'dart:typed_data';
+import 'package:google_ml_kit/google_ml_kit.dart';
+//import 'package:google_ml_kit_for_korean/google_ml_kit_for_korean.dart';
+import 'package:http/http.dart' as http;
+import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
+
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -41,6 +47,7 @@ class _HomeScreenState extends State<HomeScreen> {
   List<String> labelNames = ["labels.txt", "labels2.txt", "labels3.txt"]; //똑같이, 내용물 변경 필요.(asset/model asset/labels)
 
   int mode = 1; //기본 모드. mode 1 2 3 있음.
+
   //왼쪽으로 밀기
   void leftSlide(){
     if(mode<3) {
@@ -146,8 +153,62 @@ class _HomeScreenState extends State<HomeScreen> {
     //final XFile? image = await _picker.pickImage(source: ImageSource.camera);
     final XFile image = await controller!.takePicture();
     _curCamera =File(image!.path);
+    if(mode == 2) {
+      /* GOOGLE OCR 사용
 
-    if(mode !=3) {
+      // from https://github.com/mr-won/Flutter-OCR/blob/master/lib/home.dart
+      //final pickedFile = await ImagePicker().getImage(source: ImageSource.gallery);
+      //if (pickedFile == null) return;
+      var bytes = _curCamera.readAsBytesSync(); // 선택한 이미지 텍스트 인식
+      String img64 = base64Encode(bytes); // base64로 인코딩(변환)
+
+      var url = 'https://api.ocr.space/parse/image';
+      var payload = {
+        "base64Image": "data:image/jpg;base64,${img64.toString()}",
+        "language": "kor"
+      };
+      var header = {"apikey": "b31cfab2b92c85ba50312090f40ebc5f13606f97"};
+
+      var post = await http.post(Uri.parse(url), body: payload, headers: header);
+      var result = jsonDecode(post.body);
+
+      String parsedtext = result['ParsedResults'][0]['ParsedText']; // 추출결과를 다시 parsedtext로 저장
+      //filepath =image!.path;
+      print("DEBUG HERE!! @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
+      print(parsedtext);
+      tts.speak(parsedtext);
+      */
+
+      /*
+      GOOGLE ML KIT 사용
+      */
+      // void getRecognizedText(XFile image) async
+      final inputImage = InputImage.fromFile(_curCamera);
+
+      // textRecognizer 초기화, 이때 script에 인식하고자하는 언어를 인자로 넘겨줌
+      // ex) 영어는 script: TextRecognitionScript.latin, 한국어는 script: TextRecognitionScript.korean
+      final textRecognizer = GoogleMlKit.vision.textRecognizer(script: TextRecognitionScript.korean);
+      //getClient(KoreanTextRecognizerOptions.Builder().build())
+
+      // 이미지의 텍스트 인식해서 recognizedText에 저장
+      RecognizedText recognizedText = await textRecognizer.processImage(inputImage);
+
+      // Release resources
+      await textRecognizer.close();
+
+      // 인식한 텍스트 정보를 scannedText에 저장
+      String scannedText = "";
+      for (TextBlock block in recognizedText.blocks) {
+        for (TextLine line in block.lines) {
+          scannedText = scannedText + line.text + "\n";
+        }
+      }
+      print(scannedText);
+      tts.speak(scannedText);
+
+    }
+    else if(mode == 1) {
+
       objDetect = await _objectModel[mode].getImagePrediction(
           await File(image!.path).readAsBytes(),
           minimumScore: 0.01,
