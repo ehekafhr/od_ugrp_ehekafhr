@@ -93,7 +93,7 @@ class _HomeScreenState extends State<HomeScreen> {
     // TODO: implement initState
     super.initState();
     loadModel(0,80);
-    loadModel(1,80); //두번째 숫자는 label의 숫자.
+    loadModel(1,1); // 11-05 model2
     loadModel(2,80); //두번째 숫자는 label의 숫자.
     loadCamera();
 
@@ -183,6 +183,40 @@ class _HomeScreenState extends State<HomeScreen> {
       GOOGLE ML KIT 사용
       */
       // void getRecognizedText(XFile image) async
+      // model-1 = 1:
+      objDetect = await _objectModel[mode-1].getImagePrediction(
+          await File(image!.path).readAsBytes(),
+          minimumScore: 0.5,
+          IOUThershold: 0.95);
+
+      //ksh revised 10-26. TTS
+      String tts_message = '';
+
+      List<ResultObjectDetection> results = [];
+
+      for (var element in objDetect) {
+        //ksh revised 10-26. TTS
+        tts_message += "${labelList[element!.classIndex]}. ";
+        results.add(element);
+
+        //그냥 변수들 확인용. print된 것들은 run에서 확인 가능.
+        print({
+          "score": element?.score,
+          "className": element?.className,
+          "class": element?.classIndex,
+          "rect": {
+            "left": element?.rect.left,
+            "top": element?.rect.top,
+            "width": element?.rect.width,
+            "height": element?.rect.height,
+            "right": element?.rect.right,
+            "bottom": element?.rect.bottom,
+          },
+        });
+      }
+      tts.speak(tts_message);
+
+
       final inputImage = InputImage.fromFile(_curCamera);
 
       // textRecognizer 초기화, 이때 script에 인식하고자하는 언어를 인자로 넘겨줌
