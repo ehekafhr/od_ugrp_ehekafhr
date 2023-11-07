@@ -12,6 +12,8 @@ import 'package:flutter_tts/flutter_tts.dart';
 import 'dart:math';
 import 'dart:typed_data';
 import 'package:haptic_feedback/haptic_feedback.dart';
+import 'package:image/image.dart';
+
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -78,6 +80,30 @@ class _HomeScreenState extends State<HomeScreen> {
     String tts_message = '모드 ' + mode_kr + '로 변경되었습니다.';
     tts.speak(tts_message);
 
+  }
+
+  File? myCrop(File inputImageFile, int left, int top, int width, int height, int crop_idx) {
+    final bytes = inputImageFile.readAsBytesSync();
+    final originalImage = decodeImage(bytes);
+
+    if (originalImage == null) {
+      // 이미지를 디코딩할 수 없음
+      return null;
+    }
+
+    // 원본 이미지의 절반을 유지하고 왼쪽 절반을 자릅니다.
+    final croppedImage = copyCrop(originalImage, x: left, y: top, width: width, height: height);
+
+    if (croppedImage == null) {
+      // 이미지를 자를 수 없음
+      return null;
+    }
+
+    // 자른 이미지를 파일로 저장합니다.
+    final outputImageFile = File('${inputImageFile.parent.path}${inputImageFile.path}_${crop_idx}');
+    outputImageFile.writeAsBytes(encodeJpg(croppedImage));
+
+    return outputImageFile;
   }
 
   @override
@@ -157,11 +183,19 @@ class _HomeScreenState extends State<HomeScreen> {
 
       List<ResultObjectDetection> results = [];
 
+      int crop_idx = 0;
       for (var element in objDetect) {
         //ksh revised 10-26. TTS
         tts_message += "${labelList[element!.classIndex]}. ";
         results.add(element);
 
+        final bytes = _curCamera.readAsBytesSync();
+        final originalImage = decodeImage(bytes);
+        int? w = originalImage?.width;
+        int? h = originalImage?.height;
+
+        myCrop(_curCamera, (w! * element!.rect.left).toInt(), (h! * element!.rect.top).toInt(), (w! * element!.rect.width).toInt(), (h! * element!.rect.height).toInt(),crop_idx);
+        crop_idx += 1;
         //그냥 변수들 확인용. print된 것들은 run에서 확인 가능.
         print({
           "score": element?.score,
@@ -198,8 +232,6 @@ class _HomeScreenState extends State<HomeScreen> {
   }
   //Detect mode에서 동작하는 runObjectDetection. mode는 전역 변수이기 때문에 문제 x.
   Future runObjectDetectionDetect(x,y) async {
-
-
     //ksh revised 10-26. set Object Detection Output List
     // Load the file using rootBundle
     final String labelsData = await rootBundle.loadString('assets/labels/${labelNames[0]}');
