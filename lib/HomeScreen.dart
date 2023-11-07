@@ -43,7 +43,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   //ddr revised 10-25. what should mode do?
 
-  List<String> modelNames = ["model1.torchscript", "model2.torchscript", "model3.torchscript"]; //model들의 이름. 내용물 변경 필요
+  List<String> modelNames = ["model1.torchscript", "best.torchscript", "model3.torchscript"]; //model들의 이름. 내용물 변경 필요
   List<String> labelNames = ["labels.txt", "labels2.txt", "labels3.txt"]; //똑같이, 내용물 변경 필요.(asset/model asset/labels)
 
   int mode = 1; //기본 모드. mode 1 2 3 있음.
@@ -105,7 +105,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future loadModel(idx,count) async {
-    String pathObjectDetectionModel = "assets/models/${modelNames[idx]}";
+    String pathObjectDetectionModel = "assets/models/${modelNames[idx]}"; //idx는 0부터 2까지
     try {
       _objectModel.add(await FlutterPytorch.loadObjectDetectionModel(
         //Remeber here 80 value represents number of classes for custom model it will be different don't forget to change this.
@@ -142,12 +142,14 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future runObjectDetection(mode) async {
-
     final String labelsData = await rootBundle.loadString('assets/labels/${labelNames[0]}');
+    final String labelsData2 = await rootBundle.loadString('assets/labels/${labelNames[1]}');
     // Split the content into lines and store them in labelList
     final labelList = labelsData.split('\n').map((line) => line.trim()).toList();
+    final labelList2 = labelsData.split('\n').map((line) => line.trim()).toList();
     // Remove any empty lines from the list
     labelList.removeWhere((label) => label.isEmpty);
+    labelList2.removeWhere((label) => label.isEmpty);
 
     //pick an image
     //final XFile? image = await _picker.pickImage(source: ImageSource.camera);
@@ -196,7 +198,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
       for (var element in objDetect) {
         //ksh revised 10-26. TTS
-        tts_message += "${labelList[element!.classIndex]}. ";
+        tts_message += "${labelList2[element!.classIndex]}. ";
         results.add(element);
 
         //그냥 변수들 확인용. print된 것들은 run에서 확인 가능.
@@ -214,8 +216,6 @@ class _HomeScreenState extends State<HomeScreen> {
           },
         });
       }
-      tts.speak(tts_message);
-
 
       final inputImage = InputImage.fromFile(_curCamera);
 
@@ -238,7 +238,7 @@ class _HomeScreenState extends State<HomeScreen> {
         }
       }
       print(scannedText);
-      tts.speak(scannedText);
+      tts.speak(tts_message + scannedText);
 
     }
     else if(mode == 1) {
