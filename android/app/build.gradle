@@ -60,6 +60,12 @@ android {
         pickFirst 'lib/armeabi-v7a/libc++_shared.so'
         pickFirst 'lib/arm64-v8a/libc++_shared.so'
     }
+
+    dependencies {
+        implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
+        implementation 'com.google.mlkit:text-recognition:16.0.0'
+        implementation 'com.google.mlkit:text-recognition-korean:16.0.0'  //이 줄을 추가
+    }
 }
 
 flutter {

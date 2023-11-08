@@ -6,15 +6,19 @@ import 'package:flutter_pytorch/flutter_pytorch.dart';
 import 'package:flutter_pytorch/pigeon.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:camera/camera.dart';
+import 'package:path_provider/path_provider.dart';
 import 'dart:async';
 import 'LoaderState.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'dart:math';
 import 'dart:typed_data';
 import 'package:haptic_feedback/haptic_feedback.dart';
-import 'package:image/image.dart';
+import 'package:image/image.dart' as img;
 import 'package:google_ml_kit/google_ml_kit.dart';
+//import 'package:google_ml_kit_for_korean/google_ml_kit_for_korean.dart';
+import 'package:http/http.dart' as http;
 import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
+import 'package:gallery_saver/gallery_saver.dart';
 
 
 class HomeScreen extends StatefulWidget {
@@ -26,7 +30,10 @@ class HomeScreen extends StatefulWidget {
 
 
 class _HomeScreenState extends State<HomeScreen> {
-  final List<ModelObjectDetection> _objectModel = List.empty(growable: true);
+  //final List<ModelObjectDetection> _objectModel = List.empty(growable: true);
+  late ModelObjectDetection _objectModel1;
+  late ModelObjectDetection _objectModel2;
+  late ModelObjectDetection _objectModel3;
 
   File _curCamera = File('assets/images/basic_image.png');
   bool objectDetection = false;
@@ -41,10 +48,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
   //ddr revised 10-25. what should mode do?
 
-  List<String> modelNames = ["model1.torchscript", "model1.torchscript", "best.torchscript", "model3.torchscript"]; //model들의 이름. 내용물 변경 필요 // 11-08 ksh revised. 0th dummy add. mode와 idx 일치 목적
-  List<String> labelNames = ["labels.txt", "labels.txt", "labels2.txt", "labels3.txt"]; //똑같이, 내용물 변경 필요.(asset/model asset/labels) // 11-08 ksh revised. 0th dummy add. mode와 idx 일치 목적
+  List<String> modelNames = ["model1.torchscript", "best.torchscript", "model3.torchscript"]; //model들의 이름. 내용물 변경 필요 // 11-08 ksh revised. 0th dummy add. mode와 idx 일치 목적
+  List<String> labelNames = ["labels.txt", "labels2.txt", "labels3.txt"]; //똑같이, 내용물 변경 필요.(asset/model asset/labels) // 11-08 ksh revised. 0th dummy add. mode와 idx 일치 목적
 
   int mode = 1; //기본 모드. mode 1 2 3 있음.
+
   //왼쪽으로 밀기
   void leftSlide(){
     if(mode<3) {
@@ -85,9 +93,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
   }
 
-  File? myCrop(File inputImageFile, int left, int top, int width, int height, int crop_idx) {
+  File? myCrop(File inputImageFile, double left, double top, double width, double height, int crop_idx) {
+    print('$left, $top, $width, $height');
     final bytes = inputImageFile.readAsBytesSync();
-    final originalImage = decodeImage(bytes);
+    final originalImage = img.decodeImage(bytes);
 
     if (originalImage == null) {
       // 이미지를 디코딩할 수 없음
@@ -95,18 +104,26 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     // 원본 이미지의 절반을 유지하고 왼쪽 절반을 자릅니다.
-    final croppedImage = copyCrop(originalImage, x: left, y: top, width: width, height: height);
+    //{score: 0.8971056, className: pricetag, class: 0, rect: {left: 0.38418707, top: 0.79063356, width: 0.11710417, height: 0.09816212, right: 0.5012912, bottom: 0.8887957}}
+    //final croppedImage = img.copyResize(img.copyCrop(originalImage, x: left, y: top, width: width, height: height), width: 600, height: 800);
+    int? w = originalImage?.width;
+    int? h = originalImage?.height;
+    print('$w $h');
+    print('x: ${w! - ((w!*top).toInt())}, y: ${(h! * left).toInt()}, width: ${(w! * height).toInt()}, height: ${(h!*width).toInt()}');
+    final croppedImage = img.copyCrop(originalImage, x: (w - (w!*top).toInt()), y: (h!*left).toInt(), width: (w!*height).toInt(), height: (h!*width).toInt());
 
     if (croppedImage == null) {
       // 이미지를 자를 수 없음
       return null;
     }
 
-    // 자른 이미지를 파일로 저장합니다.
-    final outputImageFile = File('${inputImageFile.path}_${crop_idx}');
-    print(outputImageFile);
-    outputImageFile.writeAsBytes(encodeJpg(croppedImage));
 
+    // 자른 이미지를 파일로 저장합니다.
+    final outputImageFile = File('${inputImageFile.path.split('.jpg').join('')}_${crop_idx}.jpg');
+    print(outputImageFile);
+    outputImageFile.writeAsBytes(img.encodeJpg(croppedImage));
+
+    GallerySaver.saveImage(outputImageFile.path);
     return outputImageFile;
   }
 
@@ -114,10 +131,9 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     // TODO: implement initState
     super.initState();
-    loadModel(0,80); // ksh 11-08 add. dummy model (mode와 idx 일치시키기 위함)
-    loadModel(1,80); // mode 1
-    loadModel(2,1); // mode 2
-    loadModel(3,80); // mode 3. maybe not used
+    loadModel(); // mode 1
+    //loadModel(2,1); // mode 2
+    //loadModel(3,80); // mode 3. maybe not used
     loadCamera();
 
     //ksh revised 10-26. TTS
@@ -127,13 +143,26 @@ class _HomeScreenState extends State<HomeScreen> {
      //zx is ..
   }
 
-  Future loadModel(idx,count) async {
-    String pathObjectDetectionModel = "assets/models/${modelNames[idx]}";
+  Future loadModel() async {
     try {
-      _objectModel.add(await FlutterPytorch.loadObjectDetectionModel(
+      String pathObjectDetectionModel = "assets/models/${modelNames[0]}";
+      _objectModel1 = await FlutterPytorch.loadObjectDetectionModel(
         //Remeber here 80 value represents number of classes for custom model it will be different don't forget to change this.
-          pathObjectDetectionModel, count, 640, 640,
-          labelPath: "assets/labels/${labelNames[idx]}"));
+          pathObjectDetectionModel, 80, 640, 640,
+          labelPath: "assets/labels/${labelNames[0]}");
+
+      pathObjectDetectionModel = "assets/models/${modelNames[1]}";
+      _objectModel2 = await FlutterPytorch.loadObjectDetectionModel(
+        //Remeber here 80 value represents number of classes for custom model it will be different don't forget to change this.
+          pathObjectDetectionModel, 1, 640, 640,
+          labelPath: "assets/labels/${labelNames[1]}");
+
+      pathObjectDetectionModel = "assets/models/${modelNames[2]}";
+      _objectModel3 = await FlutterPytorch.loadObjectDetectionModel(
+        //Remeber here 80 value represents number of classes for custom model it will be different don't forget to change this.
+          pathObjectDetectionModel, 80, 640, 640,
+          labelPath: "assets/labels/${labelNames[2]}");
+
     } catch (e) {
       if (e is PlatformException) {
         print("only supported for android, Error is $e");
@@ -170,28 +199,13 @@ class _HomeScreenState extends State<HomeScreen> {
     final XFile image = await controller!.takePicture();
     _curCamera =File(image!.path);
 
-    if(mode != 3) {
-      double minimumScore;
-      double IOUThershold;
-      if(mode == 1){
-        minimumScore = 0.3;
-        IOUThershold = 0.3;
-      }
-      else {
-        minimumScore = 0.5;
-        IOUThershold = 0.3;
-      }
-      objDetect = await _objectModel[mode].getImagePrediction(
-          await File(image!.path).readAsBytes(),
-          minimumScore: minimumScore,
-          IOUThershold: IOUThershold);
-
-
-      //ksh revised 10-26. TTS
+    if(mode == 1) {
+      objDetect = await _objectModel1.getImagePrediction(
+          await _curCamera.readAsBytes(),
+          minimumScore: 0.3,
+          IOUThershold: 0.3);
       String tts_message = "";
-      List<ResultObjectDetection> results = [];
 
-      int crop_idx = 0;
       for (var element in objDetect) {
         //그냥 변수들 확인용. print된 것들은 run에서 확인 가능.
         print({
@@ -209,46 +223,64 @@ class _HomeScreenState extends State<HomeScreen> {
         });
 
         //ksh revised 10-26. TTS
-        if(mode == 1){
-          //tts_message += "${labelList[mode][element!.classIndex]}. ";
-          tts_message += "${element!.className!}\n";
-        };
-
-        if(mode == 2){
-          final bytes = _curCamera.readAsBytesSync();
-          final originalImage = decodeImage(bytes);
-          int? w = originalImage?.width;
-          int? h = originalImage?.height;
-          /*
-          File? croppedImage = myCrop(_curCamera, (w! * element!.rect.left).toInt(), (h! * element!.rect.top).toInt(), (w! * element!.rect.width).toInt(), (h! * element!.rect.height).toInt(),crop_idx);
-          if (croppedImage != null){
-            tts_message += myOCR(croppedImage) as String;
-          }*/
-          crop_idx += 1;
-          // croppedImage를 OCR하여 OCR message에 add 필요
-        }
-
-
-        results.add(element!);
+        tts_message += "${element!.className!}\n";
       }
-      tts_message = myOCR(_curCamera).toString();
+
       tts.speak(tts_message);
-      //ksh revised 10-26. TTS
-      if(!detecting){
-        tts.speak(tts_message);
-      }
+    }
+    else if(mode == 2) {
+      objDetect = await _objectModel2.getImagePrediction(
+          await _curCamera.readAsBytes(),
+          minimumScore: 0.5,
+          IOUThershold: 0.3);
+      String tts_message = "";
+      int crop_idx = 0;
 
-      setState(() {
-      });
-      return results;
+      for (var element in objDetect) {
+        print({
+          "score": element?.score,
+          "className": element?.className,
+          "class": element?.classIndex,
+          "rect": {
+            "left": element?.rect.left,
+            "top": element?.rect.top,
+            "width": element?.rect.width,
+            "height": element?.rect.height,
+            "right": element?.rect.right,
+            "bottom": element?.rect.bottom,
+          },
+        });
+
+        final bytes = _curCamera.readAsBytesSync();
+        final originalImage = img.decodeImage(bytes);
+        int? w = originalImage?.width;
+        int? h = originalImage?.height;
+
+        //File? croppedImage = myCrop(_curCamera, (w! * element!.rect.left).toInt(), (h! * element!.rect.top).toInt(), (w! * element!.rect.width).toInt(), (h! * element!.rect.height).toInt(), crop_idx);
+        File? croppedImage = myCrop(_curCamera, element!.rect.left, element!.rect.bottom, element!.rect.width, element!.rect.height, crop_idx);
+
+        crop_idx += 1;
+        if (croppedImage != null){
+          final inputImage = InputImage.fromFile(croppedImage);
+          final textRecognizer = GoogleMlKit.vision.textRecognizer(script: TextRecognitionScript.korean);
+          RecognizedText recognizedText = await textRecognizer.processImage(inputImage);
+          await textRecognizer.close();
+
+          for (TextBlock block in recognizedText.blocks) {
+            for (TextLine line in block.lines) {
+              tts_message += "${line.text}\n";
+            }
+          }
+        }
+      }
+      print(tts_message);
+      tts.speak(tts_message);
     }
     //mode 3. test용, 구현 필요
     else{
       final ImagePicker _picker = ImagePicker();
       final XFile? file = await _picker.pickImage(source: ImageSource.gallery);
-
     }
-
   }
   //Detect mode에서 동작하는 runObjectDetection. mode는 전역 변수이기 때문에 문제 x.
   Future runObjectDetectionDetect(x,y) async {
@@ -266,7 +298,7 @@ class _HomeScreenState extends State<HomeScreen> {
     _curCamera =File(image!.path);
     //final XFile? image = await _picker.pickImage(
     //    source: ImageSource.gallery, maxWidth: 200, maxHeight: 200);
-    objDetect = await _objectModel[mode].getImagePrediction(
+    objDetect = await _objectModel1.getImagePrediction(
         await File(image!.path).readAsBytes(),
         minimumScore: 0.01,
         IOUThershold: 0.01);
@@ -384,22 +416,4 @@ class _HomeScreenState extends State<HomeScreen> {
 
     );
   }
-
-  Future<String?> myOCR(File? croppedImage) async {
-    if (croppedImage == null) return null;
-    final inputImage = InputImage.fromFile(croppedImage);
-    final textRecognizer = GoogleMlKit.vision.textRecognizer(script: TextRecognitionScript.korean);
-    RecognizedText recognizedText = await textRecognizer.processImage(inputImage);
-    await textRecognizer.close();
-
-    String ttsMessage = "";
-
-    for (TextBlock block in recognizedText.blocks) {
-      for (TextLine line in block.lines) {
-        ttsMessage += "${line.text}\n";
-      }
-    }
-    return ttsMessage;
-  }
-
 }
