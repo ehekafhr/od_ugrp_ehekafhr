@@ -24,6 +24,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final List<ModelObjectDetection> _objectModel = List.empty(growable: true);
+  final List<List<String>> labelList = List.empty(growable: true);
 
   File _curCamera = File('assets/images/basic_image.png');
   bool objectDetection = false;
@@ -38,8 +39,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   //ddr revised 10-25. what should mode do?
 
-  List<String> modelNames = ["model1.torchscript", "model2.torchscript", "model3.torchscript"]; //model들의 이름. 내용물 변경 필요
-  List<String> labelNames = ["labels.txt", "labels2.txt", "labels3.txt"]; //똑같이, 내용물 변경 필요.(asset/model asset/labels)
+  List<String> modelNames = ["model1.torchscript", "model1.torchscript", "best.torchscript", "model3.torchscript"]; //model들의 이름. 내용물 변경 필요 // 11-08 ksh revised. 0th dummy add. mode와 idx 일치 목적
+  List<String> labelNames = ["labels.txt", "labels.txt", "labels2.txt", "labels3.txt"]; //똑같이, 내용물 변경 필요.(asset/model asset/labels) // 11-08 ksh revised. 0th dummy add. mode와 idx 일치 목적
 
   int mode = 1; //기본 모드. mode 1 2 3 있음.
   //왼쪽으로 밀기
@@ -100,7 +101,8 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     // 자른 이미지를 파일로 저장합니다.
-    final outputImageFile = File('${inputImageFile.parent.path}${inputImageFile.path}_${crop_idx}');
+    final outputImageFile = File('${inputImageFile.path}_${crop_idx}');
+    print(outputImageFile);
     outputImageFile.writeAsBytes(encodeJpg(croppedImage));
 
     return outputImageFile;
@@ -110,9 +112,10 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     // TODO: implement initState
     super.initState();
-    loadModel(0,80);
-    loadModel(1,80); //두번째 숫자는 label의 숫자.
-    loadModel(2,80); //두번째 숫자는 label의 숫자.
+    loadModel(0,80); // ksh 11-08 add. dummy model (mode와 idx 일치시키기 위함)
+    loadModel(1,80); // mode 1
+    loadModel(2,1); // mode 2
+    loadModel(3,80); // mode 3. maybe not used
     loadCamera();
 
     //ksh revised 10-26. TTS
@@ -129,6 +132,11 @@ class _HomeScreenState extends State<HomeScreen> {
         //Remeber here 80 value represents number of classes for custom model it will be different don't forget to change this.
           pathObjectDetectionModel, count, 640, 640,
           labelPath: "assets/labels/${labelNames[idx]}"));
+
+      String labelsData = await rootBundle.loadString('assets/labels/${labelNames[mode]}'); // 11-08 ksh revised. mode마다 다른 labelsData 사용하도록 수정
+      List<String> _labelList = labelsData.split('\n').map((line) => line.trim()).toList();
+      _labelList.removeWhere((label) => label.isEmpty);
+      labelList.add(_labelList);
     } catch (e) {
       if (e is PlatformException) {
         print("only supported for android, Error is $e");
@@ -160,23 +168,27 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future runObjectDetection(mode) async {
-
-    final String labelsData = await rootBundle.loadString('assets/labels/${labelNames[0]}');
-    // Split the content into lines and store them in labelList
-    final labelList = labelsData.split('\n').map((line) => line.trim()).toList();
-    // Remove any empty lines from the list
-    labelList.removeWhere((label) => label.isEmpty);
-
     //pick an image
     //final XFile? image = await _picker.pickImage(source: ImageSource.camera);
     final XFile image = await controller!.takePicture();
     _curCamera =File(image!.path);
 
-    if(mode !=3) {
+    if(mode != 3) {
+      double minimumScore;
+      double IOUThershold;
+      if(mode == 1){
+        minimumScore = 0.3;
+        IOUThershold = 0.3;
+      }
+      else {
+        minimumScore = 0.5;
+        IOUThershold = 0.3;
+      }
       objDetect = await _objectModel[mode].getImagePrediction(
           await File(image!.path).readAsBytes(),
-          minimumScore: 0.01,
-          IOUThershold: 0.01);
+          minimumScore: minimumScore,
+          IOUThershold: IOUThershold);
+
 
       //ksh revised 10-26. TTS
       String tts_message = '';
@@ -185,17 +197,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
       int crop_idx = 0;
       for (var element in objDetect) {
-        //ksh revised 10-26. TTS
-        tts_message += "${labelList[element!.classIndex]}. ";
-        results.add(element);
-
-        final bytes = _curCamera.readAsBytesSync();
-        final originalImage = decodeImage(bytes);
-        int? w = originalImage?.width;
-        int? h = originalImage?.height;
-
-        myCrop(_curCamera, (w! * element!.rect.left).toInt(), (h! * element!.rect.top).toInt(), (w! * element!.rect.width).toInt(), (h! * element!.rect.height).toInt(),crop_idx);
-        crop_idx += 1;
         //그냥 변수들 확인용. print된 것들은 run에서 확인 가능.
         print({
           "score": element?.score,
@@ -210,13 +211,30 @@ class _HomeScreenState extends State<HomeScreen> {
             "bottom": element?.rect.bottom,
           },
         });
+
+        //ksh revised 10-26. TTS
+        if(mode == 1){
+          //tts_message += "${labelList[mode][element!.classIndex]}. ";
+          tts_message += '${element!.className!}. ';
+        };
+
+        if(mode == 2){
+          final bytes = _curCamera.readAsBytesSync();
+          final originalImage = decodeImage(bytes);
+          int? w = originalImage?.width;
+          int? h = originalImage?.height;
+
+          myCrop(_curCamera, (w! * element!.rect.left).toInt(), (h! * element!.rect.top).toInt(), (w! * element!.rect.width).toInt(), (h! * element!.rect.height).toInt(),crop_idx);
+          crop_idx += 1;
+          // croppedImage를 OCR하여 OCR message에 add 필요
+        }
+
+        results.add(element!);
       }
       //ksh revised 10-26. TTS
       if(!detecting){
         tts.speak(tts_message);
       }
-      //ksh revised 10-26. I don't know why use this.
-      //scheduleTimeout(5 * 1000);
 
       setState(() {
       });
