@@ -13,6 +13,9 @@ import 'dart:math';
 import 'dart:typed_data';
 import 'package:haptic_feedback/haptic_feedback.dart';
 import 'package:image/image.dart';
+import 'package:google_ml_kit/google_ml_kit.dart';
+import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
+
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -24,7 +27,6 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final List<ModelObjectDetection> _objectModel = List.empty(growable: true);
-  final List<List<String>> labelList = List.empty(growable: true);
 
   File _curCamera = File('assets/images/basic_image.png');
   bool objectDetection = false;
@@ -132,11 +134,6 @@ class _HomeScreenState extends State<HomeScreen> {
         //Remeber here 80 value represents number of classes for custom model it will be different don't forget to change this.
           pathObjectDetectionModel, count, 640, 640,
           labelPath: "assets/labels/${labelNames[idx]}"));
-
-      String labelsData = await rootBundle.loadString('assets/labels/${labelNames[mode]}'); // 11-08 ksh revised. mode마다 다른 labelsData 사용하도록 수정
-      List<String> _labelList = labelsData.split('\n').map((line) => line.trim()).toList();
-      _labelList.removeWhere((label) => label.isEmpty);
-      labelList.add(_labelList);
     } catch (e) {
       if (e is PlatformException) {
         print("only supported for android, Error is $e");
@@ -191,8 +188,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
 
       //ksh revised 10-26. TTS
-      String tts_message = '';
-
+      String tts_message = "";
       List<ResultObjectDetection> results = [];
 
       int crop_idx = 0;
@@ -215,7 +211,7 @@ class _HomeScreenState extends State<HomeScreen> {
         //ksh revised 10-26. TTS
         if(mode == 1){
           //tts_message += "${labelList[mode][element!.classIndex]}. ";
-          tts_message += '${element!.className!}. ';
+          tts_message += "${element!.className!}\n";
         };
 
         if(mode == 2){
@@ -223,14 +219,20 @@ class _HomeScreenState extends State<HomeScreen> {
           final originalImage = decodeImage(bytes);
           int? w = originalImage?.width;
           int? h = originalImage?.height;
-
-          myCrop(_curCamera, (w! * element!.rect.left).toInt(), (h! * element!.rect.top).toInt(), (w! * element!.rect.width).toInt(), (h! * element!.rect.height).toInt(),crop_idx);
+          /*
+          File? croppedImage = myCrop(_curCamera, (w! * element!.rect.left).toInt(), (h! * element!.rect.top).toInt(), (w! * element!.rect.width).toInt(), (h! * element!.rect.height).toInt(),crop_idx);
+          if (croppedImage != null){
+            tts_message += myOCR(croppedImage) as String;
+          }*/
           crop_idx += 1;
           // croppedImage를 OCR하여 OCR message에 add 필요
         }
 
+
         results.add(element!);
       }
+      tts_message = myOCR(_curCamera).toString();
+      tts.speak(tts_message);
       //ksh revised 10-26. TTS
       if(!detecting){
         tts.speak(tts_message);
@@ -381,6 +383,23 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
 
     );
+  }
+
+  Future<String?> myOCR(File? croppedImage) async {
+    if (croppedImage == null) return null;
+    final inputImage = InputImage.fromFile(croppedImage);
+    final textRecognizer = GoogleMlKit.vision.textRecognizer(script: TextRecognitionScript.korean);
+    RecognizedText recognizedText = await textRecognizer.processImage(inputImage);
+    await textRecognizer.close();
+
+    String ttsMessage = "";
+
+    for (TextBlock block in recognizedText.blocks) {
+      for (TextLine line in block.lines) {
+        ttsMessage += "${line.text}\n";
+      }
+    }
+    return ttsMessage;
   }
 
 }
