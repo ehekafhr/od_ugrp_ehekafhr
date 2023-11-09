@@ -109,8 +109,9 @@ class _HomeScreenState extends State<HomeScreen> {
     int? w = originalImage?.width;
     int? h = originalImage?.height;
     print('$w $h');
-    print('x: ${w! - ((w!*top).toInt())}, y: ${(h! * left).toInt()}, width: ${(w! * height).toInt()}, height: ${(h!*width).toInt()}');
-    final croppedImage = img.copyCrop(originalImage, x: (w - (w!*top).toInt()), y: (h!*left).toInt(), width: (w!*height).toInt(), height: (h!*width).toInt());
+    //print('x: ${w! - ((w!*top).toInt())}, y: ${(h! * left).toInt()}, width: ${(w! * height).toInt()}, height: ${(h!*width).toInt()}');
+    //final croppedImage = img.copyCrop(originalImage, x: (w - (w!*top).toInt()), y: (h!*left).toInt(), width: (w!*height).toInt(), height: (h!*width).toInt());
+    final croppedImage = img.copyCrop(originalImage, x: (w!*left).toInt(), y: (h!*(1-top)).toInt(), width: (w!*width).toInt(), height: (h!*height).toInt());
 
     if (croppedImage == null) {
       // 이미지를 자를 수 없음
@@ -337,7 +338,7 @@ class _HomeScreenState extends State<HomeScreen> {
           IOUThershold: 0.3);
       String tts_message = "";
       int crop_idx = 0;
-      double minDistance = 2;
+      double minDistance = 0.01;
 
       for (var element in objDetect) {
         print({
@@ -354,20 +355,28 @@ class _HomeScreenState extends State<HomeScreen> {
           },
         });
 
-        var xDistance = min(((element!.rect.left)-x).abs(),((element.rect.right)-x).abs());
-        var yDistance = min(((element.rect.bottom)-y).abs(),((element!.rect.top)-y).abs());
-        if(element!.rect.right>x && element!.rect.left<x) xDistance = 0;
-        if(element!.rect.top>y && element!.rect.bottom<y) yDistance = 0;
+        // transpose
+        var h = element!.rect.width;
+        var w = element.rect.height;
+        var t = 1 - element.rect.right;
+        var b = 1 - element.rect.left;
+        var l = 1 - element.rect.bottom;
+        var r = 1 - element.rect.top;
+
+        var xDistance = min((l-x).abs(),(r-x).abs());
+        var yDistance = min((b-y).abs(),(t-y).abs());
+        if(r>x && l<x) xDistance = 0;
+        if(t>y && b<y) yDistance = 0;
         print(xDistance);
         print("Is the Xdistance");
         var distance = xDistance*xDistance+yDistance*yDistance;
         if (distance < minDistance) {
 
-          final bytes = _curCamera.readAsBytesSync();
-          final originalImage = img.decodeImage(bytes);
+          //final bytes = _curCamera.readAsBytesSync();
+          //final originalImage = img.decodeImage(bytes);
 
           //File? croppedImage = myCrop(_curCamera, (w! * element!.rect.left).toInt(), (h! * element!.rect.top).toInt(), (w! * element!.rect.width).toInt(), (h! * element!.rect.height).toInt(), crop_idx);
-          File? croppedImage = myCrop(_curCamera, element!.rect.left, element!.rect.bottom, element!.rect.width, element!.rect.height, crop_idx);
+          File? croppedImage = myCrop(_curCamera, l, b, w, h, crop_idx);
 
           crop_idx += 1;
           if (croppedImage != null){
