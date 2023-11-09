@@ -271,16 +271,16 @@ class _HomeScreenState extends State<HomeScreen> {
           final BarcodeDetector barcodeDetector = FirebaseVision.instance.barcodeDetector();
           final List<Barcode> barcodes = await barcodeDetector.detectInImage(visionImage);
           // 이미지 라이브러리를 사용해 이미지 로드
-          img.Image originalImage = img.decodeImage(await inputImage.readAsBytes())!;
+          img.Image cropedImage = img.decodeImage(await inputImage.readAsBytes())!;
           for (Barcode barcode in barcodes) {
             final Rect boundingBox = barcode.boundingBox!;
 
             // 바코드 영역을 하얀색으로 채우기
-            img.fillRect(originalImage, boundingBox.left.toInt(), boundingBox.top.toInt(), boundingBox.right.toInt(), boundingBox.bottom.toInt(), img.getColor(255, 255, 255));
+            img.fillRect(cropedImage, boundingBox.left.toInt(), boundingBox.top.toInt(), boundingBox.right.toInt(), boundingBox.bottom.toInt(), img.getColor(255, 255, 255));
 
 
           final textRecognizer = GoogleMlKit.vision.textRecognizer(script: TextRecognitionScript.korean);
-          RecognizedText recognizedText = await textRecognizer.processImage(inputImage);
+          RecognizedText recognizedText = await textRecognizer.processImage(cropedImage);
           await textRecognizer.close();
 
           for (TextBlock block in recognizedText.blocks) {
