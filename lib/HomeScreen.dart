@@ -225,8 +225,8 @@ class _HomeScreenState extends State<HomeScreen> {
         //ksh revised 10-26. TTS
         tts_message += "${element!.className!}\n";
       }
-
-      tts.speak(tts_message);
+      print(tts_message);
+      if(!detecting) tts.speak(tts_message);
     }
     else if(mode == 2) {
       objDetect = await _objectModel2.getImagePrediction(
@@ -253,8 +253,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
         final bytes = _curCamera.readAsBytesSync();
         final originalImage = img.decodeImage(bytes);
-        int? w = originalImage?.width;
-        int? h = originalImage?.height;
 
         //File? croppedImage = myCrop(_curCamera, (w! * element!.rect.left).toInt(), (h! * element!.rect.top).toInt(), (w! * element!.rect.width).toInt(), (h! * element!.rect.height).toInt(), crop_idx);
         File? croppedImage = myCrop(_curCamera, element!.rect.left, element!.rect.bottom, element!.rect.width, element!.rect.height, crop_idx);
@@ -274,7 +272,7 @@ class _HomeScreenState extends State<HomeScreen> {
         }
       }
       print(tts_message);
-      tts.speak(tts_message);
+      if(!detecting) tts.speak(tts_message);
     }
     //mode 3. test용, 구현 필요
     else{
@@ -284,59 +282,117 @@ class _HomeScreenState extends State<HomeScreen> {
   }
   //Detect mode에서 동작하는 runObjectDetection. mode는 전역 변수이기 때문에 문제 x.
   Future runObjectDetectionDetect(x,y) async {
+    //ksh revised 11-09. Don't used
     //ksh revised 10-26. set Object Detection Output List
     // Load the file using rootBundle
-    final String labelsData = await rootBundle.loadString('assets/labels/${labelNames[0]}');
+    //final String labelsData = await rootBundle.loadString('assets/labels/${labelNames[0]}');
     // Split the content into lines and store them in labelList
-    final labelList = labelsData.split('\n').map((line) => line.trim()).toList();
+    //final labelList = labelsData.split('\n').map((line) => line.trim()).toList();
     // Remove any empty lines from the list
-    labelList.removeWhere((label) => label.isEmpty);
+    //labelList.removeWhere((label) => label.isEmpty);
 
     //pick an image
     //final XFile? image = await _picker.pickImage(source: ImageSource.camera);
     final XFile image = await controller!.takePicture();
     _curCamera =File(image!.path);
+
     //final XFile? image = await _picker.pickImage(
     //    source: ImageSource.gallery, maxWidth: 200, maxHeight: 200);
-    objDetect = await _objectModel1.getImagePrediction(
-        await File(image!.path).readAsBytes(),
-        minimumScore: 0.01,
-        IOUThershold: 0.01);
 
-    //ksh revised 10-26. TTS
-    String tts_message = '';
+    //ksh revised 11-09. Split code mode by mode
+    if(mode == 1) {
+      objDetect = await _objectModel1.getImagePrediction(
+          await File(image!.path).readAsBytes(),
+          minimumScore: 0.3,
+          IOUThershold: 0.3);
 
-    List<ResultObjectDetection> results = [];
-    double minDistance = 2;
-    var obj  = '';
-    for (var element in objDetect) {
-      //ksh revised 10-26. TTS
-
-      tts_message += "${labelList[element!.classIndex]}. ";
-      print("$x $y");
-      print(element.rect.left);
-      results.add(element);
-      var xDistance = min(((element.rect.left)-x).abs(),((element.rect.right)-x).abs());
-      var yDistance = min(((element.rect.bottom)-y).abs(),((element.rect.top)-y).abs());
-      if(element.rect.right>x && element.rect.left<x) xDistance = 0;
-      if(element.rect.top>y && element.rect.bottom<y) yDistance = 0;
-      print(xDistance);
-      print("Is the Xdistance");
-      var distance = xDistance*xDistance+yDistance*yDistance;
-      if (distance < minDistance){
-        obj = "${labelList[element!.classIndex]}. ";
-        minDistance = distance;
+      double minDistance = 2;
+      var tts_message  = "";
+      for (var element in objDetect) {
+        //ksh revised 10-26. TTS
+        //tts_message += "${element!.className}\n";
+        print("$x $y");
+        print(element!.rect.left);
+        //results.add(element);
+        var xDistance = min(((element!.rect.left)!-x).abs(),((element!.rect.right)-x).abs());
+        var yDistance = min(((element!.rect.bottom)-y).abs(),((element!.rect.top)-y).abs());
+        if(element!.rect.right>x && element!.rect.left<x) xDistance = 0;
+        if(element!.rect.top>y && element!.rect.bottom<y) yDistance = 0;
+        print(xDistance);
+        print("Is the Xdistance");
+        var distance = xDistance*xDistance+yDistance*yDistance;
+        if (distance < minDistance){
+          tts_message = "${element!.className}\n";
+          minDistance = distance;
+        }
       }
+
+      //ksh revised 10-26. TTS
+      if(detecting) tts.speak(tts_message);
+    }
+    else if(mode == 2) {
+      objDetect = await _objectModel2.getImagePrediction(
+          await _curCamera.readAsBytes(),
+          minimumScore: 0.5,
+          IOUThershold: 0.3);
+      String tts_message = "";
+      int crop_idx = 0;
+      double minDistance = 2;
+
+      for (var element in objDetect) {
+        print({
+          "score": element?.score,
+          "className": element?.className,
+          "class": element?.classIndex,
+          "rect": {
+            "left": element?.rect.left,
+            "top": element?.rect.top,
+            "width": element?.rect.width,
+            "height": element?.rect.height,
+            "right": element?.rect.right,
+            "bottom": element?.rect.bottom,
+          },
+        });
+
+        var xDistance = min(((element!.rect.left)-x).abs(),((element.rect.right)-x).abs());
+        var yDistance = min(((element.rect.bottom)-y).abs(),((element!.rect.top)-y).abs());
+        if(element!.rect.right>x && element!.rect.left<x) xDistance = 0;
+        if(element!.rect.top>y && element!.rect.bottom<y) yDistance = 0;
+        print(xDistance);
+        print("Is the Xdistance");
+        var distance = xDistance*xDistance+yDistance*yDistance;
+        if (distance < minDistance) {
+
+          final bytes = _curCamera.readAsBytesSync();
+          final originalImage = img.decodeImage(bytes);
+
+          //File? croppedImage = myCrop(_curCamera, (w! * element!.rect.left).toInt(), (h! * element!.rect.top).toInt(), (w! * element!.rect.width).toInt(), (h! * element!.rect.height).toInt(), crop_idx);
+          File? croppedImage = myCrop(_curCamera, element!.rect.left, element!.rect.bottom, element!.rect.width, element!.rect.height, crop_idx);
+
+          crop_idx += 1;
+          if (croppedImage != null){
+            final inputImage = InputImage.fromFile(croppedImage);
+            final textRecognizer = GoogleMlKit.vision.textRecognizer(script: TextRecognitionScript.korean);
+            RecognizedText recognizedText = await textRecognizer.processImage(inputImage);
+            await textRecognizer.close();
+
+            for (TextBlock block in recognizedText.blocks) {
+              for (TextLine line in block.lines) {
+                tts_message += "${line.text}\n";
+              }
+            }
+          }
+        }
+      }
+      print(tts_message);
+      if(detecting) tts.speak(tts_message);
     }
 
-    //ksh revised 10-26. TTS
-    if(detecting) tts.speak(obj);
-    //ksh revised 10-26. I don't know why use this.
-    //scheduleTimeout(5 * 1000);
-
-    setState(() {
-    });
-    return results;
+    //mode 3. test용, 구현 필요
+    else{
+      final ImagePicker _picker = ImagePicker();
+      final XFile? file = await _picker.pickImage(source: ImageSource.gallery);
+    }
   }
 
   @override
