@@ -20,6 +20,9 @@ import 'package:http/http.dart' as http;
 import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
 import 'package:gallery_saver/gallery_saver.dart';
 
+import 'package:firebase_ml_vision/firebase_ml_vision.dart';
+import 'package:image/image.dart' as img;
+
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -262,6 +265,20 @@ class _HomeScreenState extends State<HomeScreen> {
         crop_idx += 1;
         if (croppedImage != null){
           final inputImage = InputImage.fromFile(croppedImage);
+
+
+          final FirebaseVisionImage visionImage = FirebaseVisionImage.fromFile(inputImage);
+          final BarcodeDetector barcodeDetector = FirebaseVision.instance.barcodeDetector();
+          final List<Barcode> barcodes = await barcodeDetector.detectInImage(visionImage);
+          // 이미지 라이브러리를 사용해 이미지 로드
+          img.Image originalImage = img.decodeImage(await inputImage.readAsBytes())!;
+          for (Barcode barcode in barcodes) {
+            final Rect boundingBox = barcode.boundingBox!;
+
+            // 바코드 영역을 하얀색으로 채우기
+            img.fillRect(originalImage, boundingBox.left.toInt(), boundingBox.top.toInt(), boundingBox.right.toInt(), boundingBox.bottom.toInt(), img.getColor(255, 255, 255));
+
+
           final textRecognizer = GoogleMlKit.vision.textRecognizer(script: TextRecognitionScript.korean);
           RecognizedText recognizedText = await textRecognizer.processImage(inputImage);
           await textRecognizer.close();
