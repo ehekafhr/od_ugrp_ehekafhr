@@ -232,8 +232,8 @@ class _HomeScreenState extends State<HomeScreen> {
     else if(mode == 2) {
       objDetect = await _objectModel2.getImagePrediction(
           await _curCamera.readAsBytes(),
-          minimumScore: 0.5,
-          IOUThershold: 0.3);
+          minimumScore: 0.2,
+          IOUThershold: 0.2);
       String tts_message = "";
       int crop_idx = 0;
 
@@ -252,11 +252,19 @@ class _HomeScreenState extends State<HomeScreen> {
           },
         });
 
-        final bytes = _curCamera.readAsBytesSync();
-        final originalImage = img.decodeImage(bytes);
+        //final bytes = _curCamera.readAsBytesSync();
+        //final originalImage = img.decodeImage(bytes);
+
+        // transpose
+        var h = element!.rect.width;
+        var w = element.rect.height;
+        var t = 1 - element.rect.right;
+        var b = 1 - element.rect.left;
+        var l = 1 - element.rect.bottom;
+        var r = 1 - element.rect.top;
 
         //File? croppedImage = myCrop(_curCamera, (w! * element!.rect.left).toInt(), (h! * element!.rect.top).toInt(), (w! * element!.rect.width).toInt(), (h! * element!.rect.height).toInt(), crop_idx);
-        File? croppedImage = myCrop(_curCamera, element!.rect.left, element!.rect.bottom, element!.rect.width, element!.rect.height, crop_idx);
+        File? croppedImage = myCrop(_curCamera, l, b, w, h, crop_idx);
 
         crop_idx += 1;
         if (croppedImage != null){
@@ -334,11 +342,11 @@ class _HomeScreenState extends State<HomeScreen> {
     else if(mode == 2) {
       objDetect = await _objectModel2.getImagePrediction(
           await _curCamera.readAsBytes(),
-          minimumScore: 0.5,
-          IOUThershold: 0.3);
+          minimumScore: 0.2,
+          IOUThershold: 0.2);
       String tts_message = "";
       int crop_idx = 0;
-      double minDistance = 0.01;
+      double minDistance = 0.02;
 
       for (var element in objDetect) {
         print({
