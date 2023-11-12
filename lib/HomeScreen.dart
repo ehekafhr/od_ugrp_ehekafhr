@@ -308,7 +308,7 @@ class _HomeScreenState extends State<HomeScreen> {
       print(tts_message);
       if (!detecting) tts.speak(tts_message);
     }
-    //mode 3. test용, 구현 필요
+    //mode 3. 바코드 스캐너 1차 구현 완료
     else {
       scanBarcode();
     }
@@ -433,7 +433,7 @@ class _HomeScreenState extends State<HomeScreen> {
       if (detecting) tts.speak(tts_message);
     }
 
-    //mode 3. test용, 구현 필요
+    //mode 3. 바코드 스캐너 1차 구현 완료
     else{
       // final ImagePicker _picker = ImagePicker();
       // final XFile? file = await _picker.pickImage(source: ImageSource.gallery);
