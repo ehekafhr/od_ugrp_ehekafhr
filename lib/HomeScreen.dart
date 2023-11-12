@@ -37,63 +37,69 @@ class _HomeScreenState extends State<HomeScreen> {
 
   File _curCamera = File('assets/images/basic_image.png');
   bool objectDetection = false;
-  List<ResultObjectDetection?> objDetect = List.empty(growable : true);
+  List<ResultObjectDetection?> objDetect = List.empty(growable: true);
 
   final FlutterTts tts = FlutterTts();
-  double _x=0;
-  double _y=0;
+  double _x = 0;
+  double _y = 0;
   double x = 0;
   double y = 0;
   bool detecting = false;
 
   //ddr revised 10-25. what should mode do?
 
-  List<String> modelNames = ["model1.torchscript", "best.torchscript", "model3.torchscript"]; //model들의 이름. 내용물 변경 필요 // 11-08 ksh revised. 0th dummy add. mode와 idx 일치 목적
-  List<String> labelNames = ["labels.txt", "labels2.txt", "labels3.txt"]; //똑같이, 내용물 변경 필요.(asset/model asset/labels) // 11-08 ksh revised. 0th dummy add. mode와 idx 일치 목적
+  List<String> modelNames = [
+    "model1.torchscript",
+    "best.torchscript",
+    "model3.torchscript"
+  ]; //model들의 이름. 내용물 변경 필요 // 11-08 ksh revised. 0th dummy add. mode와 idx 일치 목적
+  List<String> labelNames = [
+    "labels.txt",
+    "labels2.txt",
+    "labels3.txt"
+  ]; //똑같이, 내용물 변경 필요.(asset/model asset/labels) // 11-08 ksh revised. 0th dummy add. mode와 idx 일치 목적
 
   int mode = 1; //기본 모드. mode 1 2 3 있음.
 
   //왼쪽으로 밀기
-  void leftSlide(){
-    if(mode<3) {
-      mode +=1;
+  void leftSlide() {
+    if (mode < 3) {
+      mode += 1;
     } else {
       mode = 1;
     }
-    if(mode==3){
-    }
+    if (mode == 3) {}
     Haptics.vibrate(HapticsType.heavy);
 
     //ksh revised 10-26. TTS
     String mode_kr = '';
-    if(mode == 1) mode_kr = "일";
-    if(mode == 2) mode_kr = "이";
-    if(mode == 3) mode_kr = "삼으";
+    if (mode == 1) mode_kr = "일";
+    if (mode == 2) mode_kr = "이";
+    if (mode == 3) mode_kr = "삼으";
     String tts_message = '모드 ' + mode_kr + '로 변경되었습니다.';
     tts.speak(tts_message);
-
   }
+
   //오른쪽으로 밀기. haptic은 왠지 모르겠는데 안됨..
-  void rightSlide(){
-    if(mode==3){
-    }
-    if(mode>1){
-      mode-=1;
+  void rightSlide() {
+    if (mode == 3) {}
+    if (mode > 1) {
+      mode -= 1;
     } else {
       mode = 3;
     }
     Haptics.vibrate(HapticsType.heavy);
     //ksh revised 10-26. TTS
     String mode_kr = '';
-    if(mode == 1) mode_kr = "일";
-    if(mode == 2) mode_kr = "이";
-    if(mode == 3) mode_kr = "삼으";
+    if (mode == 1) mode_kr = "일";
+    if (mode == 2) mode_kr = "이";
+    if (mode == 3) mode_kr = "삼으";
     String tts_message = '모드 ' + mode_kr + '로 변경되었습니다.';
     tts.speak(tts_message);
-
   }
 
-  File? myCrop(File inputImageFile, double left, double top, double width, double height, int crop_idx) {
+  File? myCrop(File inputImageFile, double left, double top, double width,
+      double height, int crop_idx) {
     print('$left, $top, $width, $height');
     final bytes = inputImageFile.readAsBytesSync();
     final originalImage = img.decodeImage(bytes);
@@ -111,7 +117,10 @@ class _HomeScreenState extends State<HomeScreen> {
     print('$w $h');
     //print('x: ${w! - ((w!*top).toInt())}, y: ${(h! * left).toInt()}, width: ${(w! * height).toInt()}, height: ${(h!*width).toInt()}');
     //final croppedImage = img.copyCrop(originalImage, x: (w - (w!*top).toInt()), y: (h!*left).toInt(), width: (w!*height).toInt(), height: (h!*width).toInt());
-    final croppedImage = img.copyCrop(originalImage, x: (w!*left).toInt(), y: (h!*(1-top)).toInt(), width: (w!*width).toInt(), height: (h!*height).toInt());
+    final croppedImage = img.copyCrop(originalImage, x: (w! * left).toInt(),
+        y: (h! * (1 - top)).toInt(),
+        width: (w! * width).toInt(),
+        height: (h! * height).toInt());
 
     if (croppedImage == null) {
       // 이미지를 자를 수 없음
@@ -120,7 +129,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
 
     // 자른 이미지를 파일로 저장합니다.
-    final outputImageFile = File('${inputImageFile.path.split('.jpg').join('')}_${crop_idx}.jpg');
+    final outputImageFile = File(
+        '${inputImageFile.path.split('.jpg').join('')}_${crop_idx}.jpg');
     print(outputImageFile);
     outputImageFile.writeAsBytes(img.encodeJpg(croppedImage));
 
@@ -141,7 +151,7 @@ class _HomeScreenState extends State<HomeScreen> {
     tts.setSpeechRate(0.3);
     tts.setLanguage("ko-KR");
 
-     //zx is ..
+    //zx is ..
   }
 
   Future loadModel() async {
@@ -163,7 +173,6 @@ class _HomeScreenState extends State<HomeScreen> {
         //Remeber here 80 value represents number of classes for custom model it will be different don't forget to change this.
           pathObjectDetectionModel, 80, 640, 640,
           labelPath: "assets/labels/${labelNames[2]}");
-
     } catch (e) {
       if (e is PlatformException) {
         print("only supported for android, Error is $e");
@@ -176,31 +185,51 @@ class _HomeScreenState extends State<HomeScreen> {
   //ddr revised 10-25. Camera 10-29. 승주 code 참조해서 변환함.
   CameraController? controller;
 
-  Future loadCamera() async{
+  Future loadCamera() async {
     List<CameraDescription> cameras = await availableCameras();
-    if(cameras != null) {
-      try{
-        controller= CameraController(cameras[0], ResolutionPreset.high);
+    if (cameras != null) {
+      try {
+        controller = CameraController(cameras[0], ResolutionPreset.high);
         await controller!.initialize();
       } catch (e) {
         print(e);
         print("Is the error");
       }
     }
-    else{
+    else {
       print("Failed");
     }
 
-    await Future.delayed(const Duration(milliseconds:100));
+    await Future.delayed(const Duration(milliseconds: 100));
+  }
+
+  //barcode scanner 관련 코드 추가
+  Future <void> scanBarcode() async {
+    final BarcodeScanner barcodeScanner = GoogleMlKit.vision.barcodeScanner();
+
+    try {
+      final InputImage inputImage = InputImage.fromFile(_curCamera);
+      final List<Barcode> barcodes = await barcodeScanner.processImage(inputImage);
+
+      for (Barcode barcode in barcodes) {
+        final String code = barcode.displayValue!;
+        print("Scanned barcode: $code");
+        // Handle the scanned barcode as needed
+      }
+    } catch (e) {
+      print("Error: $e");
+    } finally {
+      await barcodeScanner.close();
+    }
   }
 
   Future runObjectDetection(mode) async {
     //pick an image
     //final XFile? image = await _picker.pickImage(source: ImageSource.camera);
     final XFile image = await controller!.takePicture();
-    _curCamera =File(image!.path);
+    _curCamera = File(image!.path);
 
-    if(mode == 1) {
+    if (mode == 1) {
       objDetect = await _objectModel1.getImagePrediction(
           await _curCamera.readAsBytes(),
           minimumScore: 0.3,
@@ -227,9 +256,9 @@ class _HomeScreenState extends State<HomeScreen> {
         tts_message += "${element!.className!}\n";
       }
       print(tts_message);
-      if(!detecting) tts.speak(tts_message);
+      if (!detecting) tts.speak(tts_message);
     }
-    else if(mode == 2) {
+    else if (mode == 2) {
       objDetect = await _objectModel2.getImagePrediction(
           await _curCamera.readAsBytes(),
           minimumScore: 0.5,
@@ -256,13 +285,17 @@ class _HomeScreenState extends State<HomeScreen> {
         final originalImage = img.decodeImage(bytes);
 
         //File? croppedImage = myCrop(_curCamera, (w! * element!.rect.left).toInt(), (h! * element!.rect.top).toInt(), (w! * element!.rect.width).toInt(), (h! * element!.rect.height).toInt(), crop_idx);
-        File? croppedImage = myCrop(_curCamera, element!.rect.left, element!.rect.bottom, element!.rect.width, element!.rect.height, crop_idx);
+        File? croppedImage = myCrop(
+            _curCamera, element!.rect.left, element!.rect.bottom,
+            element!.rect.width, element!.rect.height, crop_idx);
 
         crop_idx += 1;
-        if (croppedImage != null){
+        if (croppedImage != null) {
           final inputImage = InputImage.fromFile(croppedImage);
-          final textRecognizer = GoogleMlKit.vision.textRecognizer(script: TextRecognitionScript.korean);
-          RecognizedText recognizedText = await textRecognizer.processImage(inputImage);
+          final textRecognizer = GoogleMlKit.vision.textRecognizer(
+              script: TextRecognitionScript.korean);
+          RecognizedText recognizedText = await textRecognizer.processImage(
+              inputImage);
           await textRecognizer.close();
 
           for (TextBlock block in recognizedText.blocks) {
@@ -273,16 +306,16 @@ class _HomeScreenState extends State<HomeScreen> {
         }
       }
       print(tts_message);
-      if(!detecting) tts.speak(tts_message);
+      if (!detecting) tts.speak(tts_message);
     }
     //mode 3. test용, 구현 필요
-    else{
-      final ImagePicker _picker = ImagePicker();
-      final XFile? file = await _picker.pickImage(source: ImageSource.gallery);
+    else {
+      scanBarcode();
     }
   }
+
   //Detect mode에서 동작하는 runObjectDetection. mode는 전역 변수이기 때문에 문제 x.
-  Future runObjectDetectionDetect(x,y) async {
+  Future runObjectDetectionDetect(x, y) async {
     //ksh revised 11-09. Don't used
     //ksh revised 10-26. set Object Detection Output List
     // Load the file using rootBundle
@@ -295,43 +328,45 @@ class _HomeScreenState extends State<HomeScreen> {
     //pick an image
     //final XFile? image = await _picker.pickImage(source: ImageSource.camera);
     final XFile image = await controller!.takePicture();
-    _curCamera =File(image!.path);
+    _curCamera = File(image!.path);
 
     //final XFile? image = await _picker.pickImage(
     //    source: ImageSource.gallery, maxWidth: 200, maxHeight: 200);
 
     //ksh revised 11-09. Split code mode by mode
-    if(mode == 1) {
+    if (mode == 1) {
       objDetect = await _objectModel1.getImagePrediction(
           await File(image!.path).readAsBytes(),
           minimumScore: 0.3,
           IOUThershold: 0.3);
 
       double minDistance = 2;
-      var tts_message  = "";
+      var tts_message = "";
       for (var element in objDetect) {
         //ksh revised 10-26. TTS
         //tts_message += "${element!.className}\n";
         print("$x $y");
         print(element!.rect.left);
         //results.add(element);
-        var xDistance = min(((element!.rect.left)!-x).abs(),((element!.rect.right)-x).abs());
-        var yDistance = min(((element!.rect.bottom)-y).abs(),((element!.rect.top)-y).abs());
-        if(element!.rect.right>x && element!.rect.left<x) xDistance = 0;
-        if(element!.rect.top>y && element!.rect.bottom<y) yDistance = 0;
+        var xDistance = min(((element!.rect.left)! - x).abs(),
+            ((element!.rect.right) - x).abs());
+        var yDistance = min(((element!.rect.bottom) - y).abs(),
+            ((element!.rect.top) - y).abs());
+        if (element!.rect.right > x && element!.rect.left < x) xDistance = 0;
+        if (element!.rect.top > y && element!.rect.bottom < y) yDistance = 0;
         print(xDistance);
         print("Is the Xdistance");
-        var distance = xDistance*xDistance+yDistance*yDistance;
-        if (distance < minDistance){
+        var distance = xDistance * xDistance + yDistance * yDistance;
+        if (distance < minDistance) {
           tts_message = "${element!.className}\n";
           minDistance = distance;
         }
       }
 
       //ksh revised 10-26. TTS
-      if(detecting) tts.speak(tts_message);
+      if (detecting) tts.speak(tts_message);
     }
-    else if(mode == 2) {
+    else if (mode == 2) {
       objDetect = await _objectModel2.getImagePrediction(
           await _curCamera.readAsBytes(),
           minimumScore: 0.5,
@@ -363,15 +398,14 @@ class _HomeScreenState extends State<HomeScreen> {
         var l = 1 - element.rect.bottom;
         var r = 1 - element.rect.top;
 
-        var xDistance = min((l-x).abs(),(r-x).abs());
-        var yDistance = min((b-y).abs(),(t-y).abs());
-        if(r>x && l<x) xDistance = 0;
-        if(t>y && b<y) yDistance = 0;
+        var xDistance = min((l - x).abs(), (r - x).abs());
+        var yDistance = min((b - y).abs(), (t - y).abs());
+        if (r > x && l < x) xDistance = 0;
+        if (t > y && b < y) yDistance = 0;
         print(xDistance);
         print("Is the Xdistance");
-        var distance = xDistance*xDistance+yDistance*yDistance;
+        var distance = xDistance * xDistance + yDistance * yDistance;
         if (distance < minDistance) {
-
           //final bytes = _curCamera.readAsBytesSync();
           //final originalImage = img.decodeImage(bytes);
 
@@ -379,10 +413,12 @@ class _HomeScreenState extends State<HomeScreen> {
           File? croppedImage = myCrop(_curCamera, l, b, w, h, crop_idx);
 
           crop_idx += 1;
-          if (croppedImage != null){
+          if (croppedImage != null) {
             final inputImage = InputImage.fromFile(croppedImage);
-            final textRecognizer = GoogleMlKit.vision.textRecognizer(script: TextRecognitionScript.korean);
-            RecognizedText recognizedText = await textRecognizer.processImage(inputImage);
+            final textRecognizer = GoogleMlKit.vision.textRecognizer(
+                script: TextRecognitionScript.korean);
+            RecognizedText recognizedText = await textRecognizer.processImage(
+                inputImage);
             await textRecognizer.close();
 
             for (TextBlock block in recognizedText.blocks) {
@@ -394,91 +430,98 @@ class _HomeScreenState extends State<HomeScreen> {
         }
       }
       print(tts_message);
-      if(detecting) tts.speak(tts_message);
+      if (detecting) tts.speak(tts_message);
     }
 
     //mode 3. test용, 구현 필요
     else{
-      final ImagePicker _picker = ImagePicker();
-      final XFile? file = await _picker.pickImage(source: ImageSource.gallery);
+      // final ImagePicker _picker = ImagePicker();
+      // final XFile? file = await _picker.pickImage(source: ImageSource.gallery);
+      scanBarcode();
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text("ORVH")),
-      backgroundColor: Colors.blue,
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(2.0),
-          //슬라이드
-          child: GestureDetector(
+    @override
+    Widget build(BuildContext context) {
+      return Scaffold(
+        appBar: AppBar(title: const Text("ORVH")),
+        backgroundColor: Colors.blue,
+        body: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(2.0),
+            //슬라이드
+            child: GestureDetector(
 
-            onPanUpdate: (details) {
-              setState(() {
-                _x += details.delta.dx;
-                _y += details.delta.dy;
-              });
-            },
-            onPanEnd: (details) {
-              if(!detecting){
-                if(_x>300){
-                  rightSlide();
-                  _x = 0;
+              onPanUpdate: (details) {
+                setState(() {
+                  _x += details.delta.dx;
+                  _y += details.delta.dy;
+                });
+              },
+              onPanEnd: (details) {
+                if (!detecting) {
+                  if (_x > 300) {
+                    rightSlide();
+                    _x = 0;
+                  }
+                  if (_x < -300) {
+                    leftSlide();
+                    _x = 0;
+                  }
                 }
-                if(_x<-300){
-                  leftSlide();
-                  _x = 0;
-                }
-              }
-            },
-            //짧터치
-            onTapDown: (TapDownDetails tapDetails) {
-              var x = tapDetails.globalPosition.dx/MediaQuery.of(context).size.width;
-              var y = tapDetails.globalPosition.dy/MediaQuery.of(context).size.height;
-              Haptics.vibrate(HapticsType.heavy);
-              if(mode == 3){
-                 runObjectDetection(mode);
-              }
-              else{
-                if(detecting){
-                  runObjectDetectionDetect(x,(1-y));
-                }
-                else{
+              },
+              //짧터치
+              onTapDown: (TapDownDetails tapDetails) {
+                var x = tapDetails.globalPosition.dx / MediaQuery
+                    .of(context)
+                    .size
+                    .width;
+                var y = tapDetails.globalPosition.dy / MediaQuery
+                    .of(context)
+                    .size
+                    .height;
+                Haptics.vibrate(HapticsType.heavy);
+                if (mode == 3) {
                   runObjectDetection(mode);
                 }
-              }
-            },
-            onLongPress: () {
-              Haptics.vibrate(HapticsType.heavy);
-              if(!detecting){
-                detecting = true;
-                tts.speak("디텍트 모드.");
-              }else{
-                detecting = false;
-                tts.speak("일반 모드");
-              }
-            },
-            child: FractionallySizedBox(
-              widthFactor: 1.0,
-              heightFactor: 1.0,
-              child: ElevatedButton(
-                onPressed: () {
-                  HapticFeedback.heavyImpact();
-                  },
-                child: FutureBuilder<void>(
-                  builder: (context, snapshot){
-                    //카메라 뷰 보여주기. 편의를 위함.
-                    return CameraPreview(controller!);
+                else {
+                  if (detecting) {
+                    runObjectDetectionDetect(x, (1 - y));
                   }
+                  else {
+                    runObjectDetection(mode);
+                  }
+                }
+              },
+              onLongPress: () {
+                Haptics.vibrate(HapticsType.heavy);
+                if (!detecting) {
+                  detecting = true;
+                  tts.speak("디텍트 모드.");
+                } else {
+                  detecting = false;
+                  tts.speak("일반 모드");
+                }
+              },
+              child: FractionallySizedBox(
+                widthFactor: 1.0,
+                heightFactor: 1.0,
+                child: ElevatedButton(
+                  onPressed: () {
+                    HapticFeedback.heavyImpact();
+                  },
+                  child: FutureBuilder<void>(
+                    builder: (context, snapshot) {
+                      //카메라 뷰 보여주기. 편의를 위함.
+                      return CameraPreview(controller!);
+                    }, future: null,
+                  ),
                 ),
               ),
             ),
           ),
         ),
-      ),
 
-    );
+      );
+    }
   }
-}
