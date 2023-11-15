@@ -39,14 +39,14 @@ dependencies:
   flutter_pytorch: ^1.0.1
   image_picker: ^1.0.4
   camera: ^0.9.4+11
-  flutter_tts: ^2.3.0
+  flutter_tts: ^3.8.3 # Related to TTS of the Product Name using Flutter
   gif: ^2.2.0
   haptic_feedback: ^0.4.2
   google_ml_kit_for_korean:
   google_ml_kit:
   image:
   path_provider:
-  http: ^0.13.3
+  http: ^0.13.6 # Related to MFDS Barcode Reader API
   gallery_saver:
 
 dev_dependencies:

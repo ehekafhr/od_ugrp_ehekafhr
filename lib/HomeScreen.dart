@@ -466,6 +466,89 @@ class _HomeScreenState extends State<HomeScreen> {
         PRODUCT_NAME={data["I2570"]["row"][0]["PRDT_NM"]}
 
         print('제품 이름: $PRODUCT_NAME');
+
+        //mode 3. 바코드 스캐너 - TTS 관련 작업(코드 시작)
+        SUBSTITUTE_PRODUCT_NAME=PRODUCT_NAME
+        for(int i=0;i<SUBSTITUTE_PRODUCT_NAME.length-1;i++) {
+          if(SUBSTITUTE_PRODUCT_NAME[i]=='M' || SUBSTITUTE_PRODUCT_NAME[i]=='m') {
+            if (SUBSTITUTE_PRODUCT_NAME[i + 1] == 'L' || SUBSTITUTE_PRODUCT_NAME[i + 1] == 'l') {
+              SUBSTITUTE_PRODUCT_NAME[i] = '밀리';
+              SUBSTITUTE_PRODUCT_NAME[i + 1] = '리터';
+            } else if (SUBSTITUTE_PRODUCT_NAME[k + 1] == 'G' || SUBSTITUTE_PRODUCT_NAME[k + 1] == 'g') {
+              SUBSTITUTE_PRODUCT_NAME[k] = '밀리';
+              SUBSTITUTE_PRODUCT_NAME[k + 1] = '그램';
+            } else if (SUBSTITUTE_PRODUCT_NAME[k + 1] == 'M' || SUBSTITUTE_PRODUCT_NAME[k + 1] == 'm') {
+              SUBSTITUTE_PRODUCT_NAME[k] = '밀리';
+              SUBSTITUTE_PRODUCT_NAME[k + 1] = '미터';
+            }
+          } else if (SUBSTITUTE_PRODUCT_NAME[k] == 'K' || SUBSTITUTE_PRODUCT_NAME[k] == 'k') {
+            if (SUBSTITUTE_PRODUCT_NAME[k + 1] == 'L' || SUBSTITUTE_PRODUCT_NAME[k + 1] == 'l') {
+              SUBSTITUTE_PRODUCT_NAME[k] = '킬로';
+              SUBSTITUTE_PRODUCT_NAME[k + 1] = '리터';
+            } else if (SUBSTITUTE_PRODUCT_NAME[k + 1] == 'G' || SUBSTITUTE_PRODUCT_NAME[k + 1] == 'g') {
+              SUBSTITUTE_PRODUCT_NAME[k] = '킬로';
+              SUBSTITUTE_PRODUCT_NAME[k + 1] = '그램';
+            } else if (SUBSTITUTE_PRODUCT_NAME[k + 1] == 'M' || SUBSTITUTE_PRODUCT_NAME[k + 1] == 'm') {
+              SUBSTITUTE_PRODUCT_NAME[k] = '킬로';
+              SUBSTITUTE_PRODUCT_NAME[k + 1] = '미터';
+            }
+          }
+        }
+
+        for (int k = 0; k < SUBSTITUTE_PRODUCT_NAME.length; k++) {
+          if (SUBSTITUTE_PRODUCT_NAME[k] == 'L' || SUBSTITUTE_PRODUCT_NAME[k] == 'l') {
+            if (k >= 1 && k <= SUBSTITUTE_PRODUCT_NAME.length - 2) {
+              if ((SUBSTITUTE_PRODUCT_NAME[k - 1] < 'A' || (SUBSTITUTE_PRODUCT_NAME[k - 1] > 'Z' && SUBSTITUTE_PRODUCT_NAME[k - 1] < 'a') || SUBSTITUTE_PRODUCT_NAME[k - 1] > 'z') && (SUBSTITUTE_PRODUCT_NAME[k + 1] < 'A' || (SUBSTITUTE_PRODUCT_NAME[k + 1] > 'Z' && SUBSTITUTE_PRODUCT_NAME[k + 1] < 'a') || SUBSTITUTE_PRODUCT_NAME[k + 1] > 'z')) {
+                SUBSTITUTE_PRODUCT_NAME[k] = '리터';
+              }
+            }
+            if (k == 0) {
+              if (SUBSTITUTE_PRODUCT_NAME[k + 1] < 'A' || (SUBSTITUTE_PRODUCT_NAME[k + 1] > 'Z' && SUBSTITUTE_PRODUCT_NAME[k + 1] < 'a') || SUBSTITUTE_PRODUCT_NAME[k + 1] > 'z') {
+                SUBSTITUTE_PRODUCT_NAME[k] = '리터';
+              }
+            }
+            if (k == SUBSTITUTE_PRODUCT_NAME.length - 1) {
+              if ((SUBSTITUTE_PRODUCT_NAME[k - 1] < 'A' || (SUBSTITUTE_PRODUCT_NAME[k - 1] > 'Z' && SUBSTITUTE_PRODUCT_NAME[k - 1] < 'a') || SUBSTITUTE_PRODUCT_NAME[k - 1] > 'z')) {
+                SUBSTITUTE_PRODUCT_NAME[k] = '리터';
+              }
+            }
+          } else if (SUBSTITUTE_PRODUCT_NAME[k] == 'G' || SUBSTITUTE_PRODUCT_NAME[k] == 'g') {
+            if (k >= 1 && k <= SUBSTITUTE_PRODUCT_NAME.length - 2) {
+              if ((SUBSTITUTE_PRODUCT_NAME[k - 1] < 'A' || (SUBSTITUTE_PRODUCT_NAME[k - 1] > 'Z' && SUBSTITUTE_PRODUCT_NAME[k - 1] < 'a') || SUBSTITUTE_PRODUCT_NAME[k - 1] > 'z') && (SUBSTITUTE_PRODUCT_NAME[k + 1] < 'A' || (SUBSTITUTE_PRODUCT_NAME[k + 1] > 'Z' && SUBSTITUTE_PRODUCT_NAME[k + 1] < 'a') || SUBSTITUTE_PRODUCT_NAME[k + 1] > 'z')) {
+                SUBSTITUTE_PRODUCT_NAME[k] = '그램';
+              }
+            }
+            if (k == 0) {
+              if (SUBSTITUTE_PRODUCT_NAME[k + 1] < 'A' || (SUBSTITUTE_PRODUCT_NAME[k + 1] > 'Z' && SUBSTITUTE_PRODUCT_NAME[k + 1] < 'a') || SUBSTITUTE_PRODUCT_NAME[k + 1] > 'z') {
+                SUBSTITUTE_PRODUCT_NAME[k] = '그램';
+              }
+            }
+            if (k == SUBSTITUTE_PRODUCT_NAME.length - 1) {
+              if ((SUBSTITUTE_PRODUCT_NAME[k - 1] < 'A' || (SUBSTITUTE_PRODUCT_NAME[k - 1] > 'Z' && SUBSTITUTE_PRODUCT_NAME[k - 1] < 'a') || SUBSTITUTE_PRODUCT_NAME[k - 1] > 'z')) {
+                SUBSTITUTE_PRODUCT_NAME[k] = '그램';
+              }
+            }
+          } else if (SUBSTITUTE_PRODUCT_NAME[k] == 'M' || SUBSTITUTE_PRODUCT_NAME[k] == 'm') {
+            if (k >= 1 && k <= SUBSTITUTE_PRODUCT_NAME.length - 2) {
+              if ((SUBSTITUTE_PRODUCT_NAME[k - 1] < 'A' || (SUBSTITUTE_PRODUCT_NAME[k - 1] > 'Z' && SUBSTITUTE_PRODUCT_NAME[k - 1] < 'a') || SUBSTITUTE_PRODUCT_NAME[k - 1] > 'z') && (SUBSTITUTE_PRODUCT_NAME[k + 1] < 'A' || (SUBSTITUTE_PRODUCT_NAME[k + 1] > 'Z' && SUBSTITUTE_PRODUCT_NAME[k + 1] < 'a') || SUBSTITUTE_PRODUCT_NAME[k + 1] > 'z')) {
+                SUBSTITUTE_PRODUCT_NAME[k] = '미터';
+              }
+            }
+            if (k == 0) {
+              if (SUBSTITUTE_PRODUCT_NAME[k + 1] < 'A' || (SUBSTITUTE_PRODUCT_NAME[k + 1] > 'Z' && SUBSTITUTE_PRODUCT_NAME[k + 1] < 'a') || SUBSTITUTE_PRODUCT_NAME[k + 1] > 'z') {
+                SUBSTITUTE_PRODUCT_NAME[k] = '미터';
+              }
+            }
+            if (k == SUBSTITUTE_PRODUCT_NAME.length - 1) {
+              if ((SUBSTITUTE_PRODUCT_NAME[k - 1] < 'A' || (SUBSTITUTE_PRODUCT_NAME[k - 1] > 'Z' && SUBSTITUTE_PRODUCT_NAME[k - 1] < 'a') || SUBSTITUTE_PRODUCT_NAME[k - 1] > 'z')) {
+                SUBSTITUTE_PRODUCT_NAME[k] = '미터';
+              }
+            }
+          }
+        }
+        print('TTS 목적 제품 이름 대체 내용: $SUBSTITUTE_PRODUCT_NAME');
+        tts.speak("$SUBSTITUTE_PRODUCT_NAME");
+        //mode 3. 바코드 스캐너 - TTS 관련 작업(코드 끝)
       } else {
         // 요청이 실패한 경우
         print('API 요청 실패: ${response.statusCode}');
