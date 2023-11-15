@@ -1,0 +1,21 @@
+{
+  "I2570": {
+    "RESULT": {
+      "MSG": "정상처리되었습니다.",
+      "CODE": "INFO-000"
+    },
+    "total_count": "1",
+    "row": [
+      {
+        "CMPNY_NM": "용대황태연합단대륭영농조합법인",
+        "HTRK_PRDLST_NM": "가공식품",
+        "PRDT_NM": "황금빛하늘내린황태포5미370g",
+        "BRCD_NO": "8809360172547",
+        "PRDLST_NM": "건어포",
+        "LAST_UPDT_DTM": "2015-01-22 11:12:12.0",
+        "HRNK_PRDLST_NM": "건포류",
+        "PRDLST_REPORT_NO": "201204020263"
+      }
+    ]
+  }
+}
