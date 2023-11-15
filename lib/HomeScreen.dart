@@ -441,6 +441,42 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  //mode 3. 바코드 스캐너 - API 관련 작업(코드 시작)
+  import 'dart:convert';
+  import 'package:http/http.dart' as http;
+
+  void main() async {
+    // 식약처 API 키와 바코드 일련번호
+    String apiKey = 'a46da5f65bf94d9ab496';
+    String barcode = barcode.displayValue;
+
+    // API 요청 주소
+    String apiUrl = 'http://openapi.foodsafetykorea.go.kr/api/$apiKey/I2570/json/1/5/BRCD_NO=$barcode';
+
+    try {
+      // API에 GET 요청 보내기
+      http.Response response = await http.get(Uri.parse(apiUrl));
+
+      // 응답이 성공인지 확인
+      if (response.statusCode == 200) {
+        // JSON 데이터 파싱
+        Map<String, dynamic> data = json.decode(response.body);
+
+        // 제품 이름의 문자열을 변수에 할당하기
+        PRODUCT_NAME={data["I2570"]["row"][0]["PRDT_NM"]}
+
+        print('제품 이름: $PRODUCT_NAME');
+      } else {
+        // 요청이 실패한 경우
+        print('API 요청 실패: ${response.statusCode}');
+      }
+    } catch (e) {
+      // 오류 처리
+      print('오류 발생: $e');
+    }
+  }
+  //mode 3. 바코드 스캐너 - API 관련 작업(코드 끝)
+
     @override
     Widget build(BuildContext context) {
       return Scaffold(
