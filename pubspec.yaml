@@ -46,7 +46,7 @@ dependencies:
   google_ml_kit:
   image:
   path_provider:
-  http: ^0.13.3  # Important Code
+  http: ^0.13.3
   gallery_saver:
 
 dev_dependencies:
