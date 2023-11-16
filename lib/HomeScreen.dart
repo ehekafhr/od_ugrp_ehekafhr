@@ -230,17 +230,14 @@ class _HomeScreenState extends State<HomeScreen> {
           if (response.statusCode == 200) {
             // JSON 데이터 파싱
             Map<String, dynamic> data = json.decode(response.body);
-
+            print('제품 정보: $data');
             // 제품 이름의 문자열을 변수에 할당하기
-            // String PRODUCT_NAME = {data["I2570"]["row"]["PRDT_NM"]} as String;
+            String PRODUCT_NAME = data["I2570"]["row"][0]["PRDT_NM"].toString();
 
-            print('제품 이름: $data');
-
+            print('제품 이름: $PRODUCT_NAME');
             // //mode 3. 바코드 스캐너 - TTS 관련 작업(코드 시작)
-            // String SUBSTITUTE_PRODUCT_NAME = PRODUCT_NAME;
 
-            // print('TTS 목적 제품 이름 대체 내용: $PRODUCT_NAME');
-            tts.speak("$data");
+            tts.speak("$PRODUCT_NAME");
 
             //mode 3. 바코드 스캐너 - TTS 관련 작업(코드 끝)
           } else {
