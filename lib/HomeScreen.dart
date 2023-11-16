@@ -19,7 +19,8 @@ import 'package:google_ml_kit/google_ml_kit.dart';
 import 'package:http/http.dart' as http;
 import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
 import 'package:gallery_saver/gallery_saver.dart';
-
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -215,12 +216,49 @@ class _HomeScreenState extends State<HomeScreen> {
         final String code = barcode.displayValue!;
         print("Scanned barcode: $code");
         // Handle the scanned barcode as needed
+
+        String apiKey = 'a46da5f65bf94d9ab496';
+
+        // API 요청 주소
+        String apiUrl = 'http://openapi.foodsafetykorea.go.kr/api/$apiKey/I2570/json/1/5/BRCD_NO=$code';
+
+        try {
+          // API에 GET 요청 보내기
+          http.Response response = await http.get(Uri.parse(apiUrl));
+
+          // 응답이 성공인지 확인
+          if (response.statusCode == 200) {
+            // JSON 데이터 파싱
+            Map<String, dynamic> data = json.decode(response.body);
+
+            // 제품 이름의 문자열을 변수에 할당하기
+            // String PRODUCT_NAME = {data["I2570"]["row"]["PRDT_NM"]} as String;
+
+            print('제품 이름: $data');
+
+            // //mode 3. 바코드 스캐너 - TTS 관련 작업(코드 시작)
+            // String SUBSTITUTE_PRODUCT_NAME = PRODUCT_NAME;
+
+            // print('TTS 목적 제품 이름 대체 내용: $PRODUCT_NAME');
+            tts.speak("$data");
+
+            //mode 3. 바코드 스캐너 - TTS 관련 작업(코드 끝)
+          } else {
+            // 요청이 실패한 경우
+            print('API 요청 실패: ${response.statusCode}');
+          }
+        } catch (e) {
+          // 오류 처리
+          print('오류 발생: $e');
+        }
       }
     } catch (e) {
       print("Error: $e");
     } finally {
       await barcodeScanner.close();
     }
+
+
   }
 
   Future runObjectDetection(mode) async {
@@ -482,7 +520,14 @@ class _HomeScreenState extends State<HomeScreen> {
                     .height;
                 Haptics.vibrate(HapticsType.heavy);
                 if (mode == 3) {
-                  runObjectDetection(mode);
+                  if (detecting){
+                    //터치한 부분 바코드가 인식되면 그것만 읽기.
+                    runObjectDetectionDetect(x, (1 - y));
+                  }
+                  else{
+                    //화면에 들어오는 전체 바코드 다 읽기
+                    runObjectDetection(mode);
+                  }
                 }
                 else {
                   if (detecting) {
