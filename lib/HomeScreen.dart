@@ -232,25 +232,114 @@ class _HomeScreenState extends State<HomeScreen> {
             Map<String, dynamic> data = json.decode(response.body);
             print('제품 정보: $data');
             // 제품 이름의 문자열을 변수에 할당하기
-            String PRODUCT_NAME = data["I2570"]["row"][0]["PRDT_NM"].toString();
+            try {
+              String PRODUCT_NAME = data["I2570"]["row"][0]["PRDT_NM"].toString();
 
-            print('제품 이름: $PRODUCT_NAME');
-            // //mode 3. 바코드 스캐너 - TTS 관련 작업(코드 시작)
+              // 제품 이름 문자열에서 단위를 한국어 발음으로 표시
+              SUBSTITUTE_PRODUCT_NAME=PRODUCT_NAME;
+              for(var i=0;i<SUBSTITUTE_PRODUCT_NAME.length-1;i++) {
+                if(SUBSTITUTE_PRODUCT_NAME[i]=='M' || SUBSTITUTE_PRODUCT_NAME[i]=='m') {
+                  if (SUBSTITUTE_PRODUCT_NAME[i + 1] == 'L' || SUBSTITUTE_PRODUCT_NAME[i + 1] == 'l') {
+                    SUBSTITUTE_PRODUCT_NAME[i] = '밀리';
+                    SUBSTITUTE_PRODUCT_NAME[i + 1] = '리터';
+                  } else if (SUBSTITUTE_PRODUCT_NAME[i + 1] == 'G' || SUBSTITUTE_PRODUCT_NAME[i + 1] == 'g') {
+                    SUBSTITUTE_PRODUCT_NAME[i] = '밀리';
+                    SUBSTITUTE_PRODUCT_NAME[i + 1] = '그램';
+                  } else if (SUBSTITUTE_PRODUCT_NAME[i + 1] == 'M' || SUBSTITUTE_PRODUCT_NAME[i + 1] == 'm') {
+                    SUBSTITUTE_PRODUCT_NAME[i] = '밀리';
+                    SUBSTITUTE_PRODUCT_NAME[i + 1] = '미터';
+                  }
+                } else if (SUBSTITUTE_PRODUCT_NAME[i] == 'K' || SUBSTITUTE_PRODUCT_NAME[i] == 'k') {
+                  if (SUBSTITUTE_PRODUCT_NAME[i + 1] == 'L' || SUBSTITUTE_PRODUCT_NAME[i + 1] == 'l') {
+                    SUBSTITUTE_PRODUCT_NAME[i] = '킬로';
+                    SUBSTITUTE_PRODUCT_NAME[i + 1] = '리터';
+                  } else if (SUBSTITUTE_PRODUCT_NAME[i + 1] == 'G' || SUBSTITUTE_PRODUCT_NAME[i + 1] == 'g') {
+                    SUBSTITUTE_PRODUCT_NAME[i] = '킬로';
+                    SUBSTITUTE_PRODUCT_NAME[i + 1] = '그램';
+                  } else if (SUBSTITUTE_PRODUCT_NAME[i + 1] == 'M' || SUBSTITUTE_PRODUCT_NAME[i + 1] == 'm') {
+                    SUBSTITUTE_PRODUCT_NAME[i] = '킬로';
+                    SUBSTITUTE_PRODUCT_NAME[i + 1] = '미터';
+                  }
+                }
+              }
 
-            tts.speak("$PRODUCT_NAME");
+              for (var i = 0; i < SUBSTITUTE_PRODUCT_NAME.length; i++) {
+                if (SUBSTITUTE_PRODUCT_NAME[i] == 'L' || SUBSTITUTE_PRODUCT_NAME[i] == 'l') {
+                  if (i >= 1 && i <= SUBSTITUTE_PRODUCT_NAME.length - 2) {
+                    if ((SUBSTITUTE_PRODUCT_NAME[i - 1] < 'A' || (SUBSTITUTE_PRODUCT_NAME[i - 1] > 'Z' && SUBSTITUTE_PRODUCT_NAME[i - 1] < 'a') || SUBSTITUTE_PRODUCT_NAME[i - 1] > 'z') && (SUBSTITUTE_PRODUCT_NAME[i + 1] < 'A' || (SUBSTITUTE_PRODUCT_NAME[i + 1] > 'Z' && SUBSTITUTE_PRODUCT_NAME[i + 1] < 'a') || SUBSTITUTE_PRODUCT_NAME[i + 1] > 'z')) {
+                      SUBSTITUTE_PRODUCT_NAME[i] = '리터';
+                    }
+                  }
+                  if (i == 0) {
+                    if (SUBSTITUTE_PRODUCT_NAME[i + 1] < 'A' || (SUBSTITUTE_PRODUCT_NAME[i + 1] > 'Z' && SUBSTITUTE_PRODUCT_NAME[i + 1] < 'a') || SUBSTITUTE_PRODUCT_NAME[i + 1] > 'z') {
+                      SUBSTITUTE_PRODUCT_NAME[i] = '리터';
+                    }
+                  }
+                  if (i == SUBSTITUTE_PRODUCT_NAME.length - 1) {
+                    if (SUBSTITUTE_PRODUCT_NAME[i - 1] < 'A' || (SUBSTITUTE_PRODUCT_NAME[i - 1] > 'Z' && SUBSTITUTE_PRODUCT_NAME[i - 1] < 'a') || SUBSTITUTE_PRODUCT_NAME[i - 1] > 'z') {
+                      SUBSTITUTE_PRODUCT_NAME[i] = '리터';
+                    }
+                  }
+                } else if (SUBSTITUTE_PRODUCT_NAME[i] == 'G' || SUBSTITUTE_PRODUCT_NAME[i] == 'g') {
+                  if (i >= 1 && i <= SUBSTITUTE_PRODUCT_NAME.length - 2) {
+                    if ((SUBSTITUTE_PRODUCT_NAME[i - 1] < 'A' || (SUBSTITUTE_PRODUCT_NAME[i - 1] > 'Z' && SUBSTITUTE_PRODUCT_NAME[i - 1] < 'a') || SUBSTITUTE_PRODUCT_NAME[i - 1] > 'z') && (SUBSTITUTE_PRODUCT_NAME[i + 1] < 'A' || (SUBSTITUTE_PRODUCT_NAME[i + 1] > 'Z' && SUBSTITUTE_PRODUCT_NAME[i + 1] < 'a') || SUBSTITUTE_PRODUCT_NAME[i + 1] > 'z')) {
+                      SUBSTITUTE_PRODUCT_NAME[i] = '그램';
+                    }
+                  }
+                  if (i == 0) {
+                    if (SUBSTITUTE_PRODUCT_NAME[i + 1] < 'A' || (SUBSTITUTE_PRODUCT_NAME[i + 1] > 'Z' && SUBSTITUTE_PRODUCT_NAME[i + 1] < 'a') || SUBSTITUTE_PRODUCT_NAME[i + 1] > 'z') {
+                      SUBSTITUTE_PRODUCT_NAME[i] = '그램';
+                    }
+                  }
+                  if (i == SUBSTITUTE_PRODUCT_NAME.length - 1) {
+                    if (SUBSTITUTE_PRODUCT_NAME[i - 1] < 'A' || (SUBSTITUTE_PRODUCT_NAME[i - 1] > 'Z' && SUBSTITUTE_PRODUCT_NAME[i - 1] < 'a') || SUBSTITUTE_PRODUCT_NAME[i - 1] > 'z') {
+                      SUBSTITUTE_PRODUCT_NAME[i] = '그램';
+                    }
+                  }
+                } else if (SUBSTITUTE_PRODUCT_NAME[i] == 'M' || SUBSTITUTE_PRODUCT_NAME[i] == 'm') {
+                  if (i >= 1 && i <= SUBSTITUTE_PRODUCT_NAME.length - 2) {
+                    if ((SUBSTITUTE_PRODUCT_NAME[i - 1] < 'A' || (SUBSTITUTE_PRODUCT_NAME[i - 1] > 'Z' && SUBSTITUTE_PRODUCT_NAME[i - 1] < 'a') || SUBSTITUTE_PRODUCT_NAME[i - 1] > 'z') && (SUBSTITUTE_PRODUCT_NAME[i + 1] < 'A' || (SUBSTITUTE_PRODUCT_NAME[i + 1] > 'Z' && SUBSTITUTE_PRODUCT_NAME[i + 1] < 'a') || SUBSTITUTE_PRODUCT_NAME[i + 1] > 'z')) {
+                      SUBSTITUTE_PRODUCT_NAME[i] = '미터';
+                    }
+                  }
+                  if (i == 0) {
+                    if (SUBSTITUTE_PRODUCT_NAME[i + 1] < 'A' || (SUBSTITUTE_PRODUCT_NAME[i + 1] > 'Z' && SUBSTITUTE_PRODUCT_NAME[i + 1] < 'a') || SUBSTITUTE_PRODUCT_NAME[i + 1] > 'z') {
+                      SUBSTITUTE_PRODUCT_NAME[i] = '미터';
+                    }
+                  }
+                  if (i == SUBSTITUTE_PRODUCT_NAME.length - 1) {
+                    if (SUBSTITUTE_PRODUCT_NAME[i - 1] < 'A' || (SUBSTITUTE_PRODUCT_NAME[i - 1] > 'Z' && SUBSTITUTE_PRODUCT_NAME[i - 1] < 'a') || SUBSTITUTE_PRODUCT_NAME[i - 1] > 'z') {
+                      SUBSTITUTE_PRODUCT_NAME[i] = '미터';
+                    }
+                  }
+                }
+              }
 
-            //mode 3. 바코드 스캐너 - TTS 관련 작업(코드 끝)
+              print('제품 이름: $SUBSTITUTE_PRODUCT_NAME');
+              tts.speak("$SUBSTITUTE_PRODUCT_NAME"); // mode 3. 바코드 스캐너 - TTS 관련 작업
+            } catch (e) {
+              print("제품 이름을 확인할 수 없습니다.")
+              tts.speak("제품 이름을 확인할 수 없습니다.") // mode 3. 바코드 스캐너 - TTS 관련 작업
+            } finally {
+              String nodata="nodata"
+            }
           } else {
             // 요청이 실패한 경우
             print('API 요청 실패: ${response.statusCode}');
+            print("제품 이름을 확인할 수 없습니다.")
+            tts.speak("제품 이름을 확인할 수 없습니다.") // mode 3. 바코드 스캐너 - TTS 관련 작업
           }
         } catch (e) {
           // 오류 처리
-          print('오류 발생: $e');
+          print('Error: $e');
+          print("제품 이름을 확인할 수 없습니다.")
+          tts.speak("제품 이름을 확인할 수 없습니다.") // mode 3. 바코드 스캐너 - TTS 관련 작업
         }
       }
     } catch (e) {
       print("Error: $e");
+      print("제품 이름을 확인할 수 없습니다.")
+      tts.speak("제품 이름을 확인할 수 없습니다.") // mode 3. 바코드 스캐너 - TTS 관련 작업
     } finally {
       await barcodeScanner.close();
     }
