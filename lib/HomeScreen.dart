@@ -50,7 +50,7 @@ class _HomeScreenState extends State<HomeScreen> {
   //ddr revised 10-25. what should mode do?
 
   List<String> modelNames = [
-    "model1.torchscript",
+    "category.torchscript",
     "best.torchscript",
     "model3.torchscript"
   ]; //model들의 이름. 내용물 변경 필요 // 11-08 ksh revised. 0th dummy add. mode와 idx 일치 목적
@@ -160,7 +160,7 @@ class _HomeScreenState extends State<HomeScreen> {
       String pathObjectDetectionModel = "assets/models/${modelNames[0]}";
       _objectModel1 = await FlutterPytorch.loadObjectDetectionModel(
         //Remeber here 80 value represents number of classes for custom model it will be different don't forget to change this.
-          pathObjectDetectionModel, 80, 640, 640,
+          pathObjectDetectionModel, 17, 640, 640,
           labelPath: "assets/labels/${labelNames[0]}");
 
       pathObjectDetectionModel = "assets/models/${modelNames[1]}";
@@ -275,8 +275,8 @@ class _HomeScreenState extends State<HomeScreen> {
     if (mode == 1) {
       objDetect = await _objectModel1.getImagePrediction(
           await _curCamera.readAsBytes(),
-          minimumScore: 0.3,
-          IOUThershold: 0.3);
+          minimumScore: 0.1,
+          IOUThershold: 0.1);
       String tts_message = "";
 
       for (var element in objDetect) {
