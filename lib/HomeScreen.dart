@@ -135,7 +135,7 @@ class _HomeScreenState extends State<HomeScreen> {
     print(outputImageFile);
     outputImageFile.writeAsBytes(img.encodeJpg(croppedImage));
 
-    GallerySaver.saveImage(outputImageFile.path);
+    // GallerySaver.saveImage(outputImageFile.path);
     return outputImageFile;
   }
 
@@ -275,8 +275,8 @@ class _HomeScreenState extends State<HomeScreen> {
     if (mode == 1) {
       objDetect = await _objectModel1.getImagePrediction(
           await _curCamera.readAsBytes(),
-          minimumScore: 0.1,
-          IOUThershold: 0.1);
+          minimumScore: 0.3,
+          IOUThershold: 0.3);
       String tts_message = "";
 
       for (var element in objDetect) {
@@ -324,16 +324,22 @@ class _HomeScreenState extends State<HomeScreen> {
           },
         });
 
-        final bytes = _curCamera.readAsBytesSync();
-        final originalImage = img.decodeImage(bytes);
+        //final bytes = _curCamera.readAsBytesSync();
+        //final originalImage = img.decodeImage(bytes);
+
+        // transpose
+        var h = element!.rect.width;
+        var w = element.rect.height;
+        var t = 1 - element.rect.right;
+        var b = 1 - element.rect.left;
+        var l = 1 - element.rect.bottom;
+        var r = 1 - element.rect.top;
 
         //File? croppedImage = myCrop(_curCamera, (w! * element!.rect.left).toInt(), (h! * element!.rect.top).toInt(), (w! * element!.rect.width).toInt(), (h! * element!.rect.height).toInt(), crop_idx);
-        File? croppedImage = myCrop(
-            _curCamera, element!.rect.left, element!.rect.bottom,
-            element!.rect.width, element!.rect.height, crop_idx);
+        File? croppedImage = myCrop(_curCamera, l, b, w, h, crop_idx);
 
         crop_idx += 1;
-        if (croppedImage != null) {
+        if (croppedImage != null){
           final inputImage = InputImage.fromFile(croppedImage);
           final textRecognizer = GoogleMlKit.vision.textRecognizer(
               script: TextRecognitionScript.korean);
